@@ -11,7 +11,7 @@ import { ArrowLeft, ArrowRight, Check, Globe, Music, Users, Ticket } from "lucid
 import { CitySelector } from "@/components/city-selector"
 import { GenreSelector } from "@/components/genre-selector"
 import { saveUserData } from "@/app/actions/save-user-data"
-import { WorldIDMiniKitComplete } from "@/components/worldid-minikit-complete"
+import { WorldIDMiniKitFlexible } from "@/components/worldid-minikit-flexible"
 
 type OnboardingStep = "auth" | "profile" | "cities" | "genres" | "artists" | "complete"
 
@@ -134,7 +134,7 @@ export function OnboardingFlow() {
         {/* Step Content */}
         <Card className="border-0 shadow-xl">
           {currentStep === "auth" && (
-            <WorldIDMiniKitComplete
+            <WorldIDMiniKitFlexible
               onSuccess={(worldId, userInfo) => {
                 console.log("World ID authentication successful:", { worldId, userInfo })
                 setUserData((prev) => ({
