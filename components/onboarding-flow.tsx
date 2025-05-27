@@ -7,17 +7,17 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
-import { ArrowLeft, ArrowRight, Check, Globe, Music, Users, Ticket } from "lucide-react"
+import { ArrowLeft, ArrowRight, Check, Globe, Music, Users, Ticket, AlertTriangle } from "lucide-react"
 import { CitySelector } from "@/components/city-selector"
 import { GenreSelector } from "@/components/genre-selector"
 import { saveUserData } from "@/app/actions/save-user-data"
-import { WorldcoinConfigChecker } from "@/components/worldcoin-config-checker"
-import { WorldIDFinalTest } from "@/components/worldid-final-test"
+import { WorldIDDevelopmentBypass } from "@/components/worldid-development-bypass"
+import { WorldIDTroubleshooter } from "@/components/worldid-troubleshooter"
 
-type OnboardingStep = "config" | "auth" | "profile" | "cities" | "genres" | "artists" | "complete"
+type OnboardingStep = "troubleshoot" | "auth" | "profile" | "cities" | "genres" | "artists" | "complete"
 
 export function OnboardingFlow() {
-  const [currentStep, setCurrentStep] = useState<OnboardingStep>("config")
+  const [currentStep, setCurrentStep] = useState<OnboardingStep>("troubleshoot")
   const [userData, setUserData] = useState({
     worldId: "",
     worldIdData: null as any,
@@ -32,8 +32,8 @@ export function OnboardingFlow() {
   })
 
   const steps = [
-    { id: "config", title: "Configuration Check", icon: Check },
-    { id: "auth", title: "World ID Sign-In", icon: Globe },
+    { id: "troubleshoot", title: "Troubleshoot", icon: AlertTriangle },
+    { id: "auth", title: "Authentication", icon: Globe },
     { id: "profile", title: "Profile Setup", icon: Users },
     { id: "cities", title: "Your Cities", icon: Globe },
     { id: "genres", title: "Music Taste", icon: Music },
@@ -45,11 +45,11 @@ export function OnboardingFlow() {
 
   const handleNext = () => {
     if (currentStep === "auth" && (!userData.worldId || !userData.worldIdData)) {
-      alert("World ID sign-in is required to continue.")
+      alert("Authentication is required to continue.")
       return
     }
 
-    const stepOrder: OnboardingStep[] = ["config", "auth", "profile", "cities", "genres", "artists", "complete"]
+    const stepOrder: OnboardingStep[] = ["troubleshoot", "auth", "profile", "cities", "genres", "artists", "complete"]
     const currentIndex = stepOrder.indexOf(currentStep)
     if (currentIndex < stepOrder.length - 1) {
       setCurrentStep(stepOrder[currentIndex + 1])
@@ -57,7 +57,7 @@ export function OnboardingFlow() {
   }
 
   const handleBack = () => {
-    const stepOrder: OnboardingStep[] = ["config", "auth", "profile", "cities", "genres", "artists", "complete"]
+    const stepOrder: OnboardingStep[] = ["troubleshoot", "auth", "profile", "cities", "genres", "artists", "complete"]
     const currentIndex = stepOrder.indexOf(currentStep)
     if (currentIndex > 0) {
       setCurrentStep(stepOrder[currentIndex - 1])
@@ -66,7 +66,7 @@ export function OnboardingFlow() {
 
   const handleComplete = async () => {
     if (!userData.worldId || !userData.worldIdData) {
-      alert("World ID sign-in is required. Please complete authentication first.")
+      alert("Authentication is required. Please complete authentication first.")
       setCurrentStep("auth")
       return
     }
@@ -75,7 +75,7 @@ export function OnboardingFlow() {
       const result = await saveUserData(userData)
 
       if (result.success) {
-        alert(`Welcome to World Fan! Your World ID sign-in is confirmed.`)
+        alert(`Welcome to World Fan! Your authentication is confirmed.`)
         window.location.href = "/dashboard"
       } else {
         alert(`Error: ${result.error}`)
@@ -132,17 +132,19 @@ export function OnboardingFlow() {
 
         {/* Step Content */}
         <Card className="border-0 shadow-xl">
-          {currentStep === "config" && (
+          {currentStep === "troubleshoot" && (
             <>
               <CardHeader>
-                <CardTitle>Configuration Check</CardTitle>
-                <CardDescription>Let's verify your Worldcoin configuration before proceeding</CardDescription>
+                <CardTitle>World ID Troubleshooting</CardTitle>
+                <CardDescription>
+                  Let's diagnose the World ID issues and provide alternative authentication
+                </CardDescription>
               </CardHeader>
               <CardContent>
-                <WorldcoinConfigChecker />
+                <WorldIDTroubleshooter />
                 <div className="mt-6 text-center">
                   <Button onClick={handleNext} className="bg-gradient-to-r from-purple-600 to-blue-600">
-                    Continue to World ID Sign-In
+                    Continue to Authentication
                   </Button>
                 </div>
               </CardContent>
@@ -150,9 +152,9 @@ export function OnboardingFlow() {
           )}
 
           {currentStep === "auth" && (
-            <WorldIDFinalTest
+            <WorldIDDevelopmentBypass
               onSuccess={(worldId, userInfo) => {
-                console.log("World ID sign-in successful:", { worldId, userInfo })
+                console.log("Authentication successful:", { worldId, userInfo })
                 setUserData((prev) => ({
                   ...prev,
                   worldId,
@@ -168,16 +170,18 @@ export function OnboardingFlow() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Check className="w-5 h-5 text-green-600" />
-                  World ID Verified - Setup Profile
+                  Authentication Complete - Setup Profile
                 </CardTitle>
-                <CardDescription>Your World ID sign-in is complete. Now tell us about yourself.</CardDescription>
+                <CardDescription>Your authentication is complete. Now tell us about yourself.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex items-center gap-3 p-3 bg-green-50 rounded-lg mb-4">
                   <Check className="w-5 h-5 text-green-600" />
                   <div>
-                    <p className="font-medium text-green-900">World ID Verified</p>
-                    <p className="text-sm text-green-700">Platform: {userData.worldIdData?.platform || "Direct"}</p>
+                    <p className="font-medium text-green-900">Authentication Verified</p>
+                    <p className="text-sm text-green-700">
+                      Mode: {userData.worldIdData?.test_mode ? "Development" : "Production"}
+                    </p>
                   </div>
                 </div>
 
@@ -275,16 +279,16 @@ export function OnboardingFlow() {
               <CardHeader>
                 <CardTitle className="text-center">Welcome to World Fan! 🎵</CardTitle>
                 <CardDescription className="text-center">
-                  Your World ID sign-in is complete. Here's what happens next:
+                  Your authentication is complete. Here's what happens next:
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="flex items-center gap-3 p-3 bg-green-50 rounded-lg">
                   <Check className="w-5 h-5 text-green-600" />
                   <div>
-                    <p className="font-medium text-green-900">World ID Verified</p>
+                    <p className="font-medium text-green-900">Authentication Complete</p>
                     <p className="text-sm text-green-700">
-                      You're protected from bots and scalpers with verified human identity
+                      You're ready to access fair-priced tickets and exclusive content
                     </p>
                   </div>
                 </div>
@@ -328,7 +332,7 @@ export function OnboardingFlow() {
           )}
 
           {/* Navigation */}
-          {currentStep !== "complete" && currentStep !== "config" && currentStep !== "auth" && (
+          {currentStep !== "complete" && currentStep !== "troubleshoot" && currentStep !== "auth" && (
             <div className="flex justify-between p-6 border-t">
               <Button variant="outline" onClick={handleBack}>
                 <ArrowLeft className="w-4 h-4 mr-2" />
