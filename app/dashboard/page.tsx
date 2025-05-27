@@ -1,5 +1,6 @@
 "use client"
 
+import { useSession } from "next-auth/react"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -21,17 +22,13 @@ import {
   Plus,
   X,
   Save,
+  LogOut,
 } from "lucide-react"
+import { signOut } from "next-auth/react"
 import Image from "next/image"
 
 export default function DashboardPage() {
-  const [user, setUser] = useState({
-    username: "musiclover123",
-    email: "user@example.com",
-    worldIdVerified: true,
-    verificationLevel: "orb",
-    joinDate: "2024-01-15",
-  })
+  const { data: session, status } = useSession()
 
   const [preferences, setPreferences] = useState({
     genres: ["Pop", "Rock", "Hip Hop", "Electronic"],
@@ -112,6 +109,21 @@ export default function DashboardPage() {
   const [genreSearch, setGenreSearch] = useState("")
   const [citySearch, setCitySearch] = useState("")
 
+  // Show loading state
+  if (status === "loading") {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50 flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-purple-600 border-t-transparent rounded-full animate-spin" />
+      </div>
+    )
+  }
+
+  // Redirect to home if not authenticated
+  if (!session) {
+    window.location.href = "/"
+    return null
+  }
+
   const filteredGenres = availableGenres.filter(
     (genre) => genre.toLowerCase().includes(genreSearch.toLowerCase()) && !preferences.genres.includes(genre),
   )
@@ -151,9 +163,12 @@ export default function DashboardPage() {
   }
 
   const savePreferences = () => {
-    // Here you would save to your backend
     console.log("Saving preferences:", preferences)
     alert("Preferences saved successfully!")
+  }
+
+  const handleSignOut = () => {
+    signOut({ callbackUrl: "/" })
   }
 
   return (
@@ -174,11 +189,15 @@ export default function DashboardPage() {
               <p className="text-gray-600">Manage your music preferences</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-4">
             <div className="flex items-center gap-2 px-3 py-1 bg-green-100 rounded-full">
               <Globe className="w-4 h-4 text-green-600" />
               <span className="text-sm font-medium text-green-800">WorldID Verified</span>
             </div>
+            <Button onClick={handleSignOut} variant="outline" size="sm">
+              <LogOut className="w-4 h-4 mr-2" />
+              Sign Out
+            </Button>
           </div>
         </header>
 
@@ -187,7 +206,7 @@ export default function DashboardPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <User className="w-5 h-5" />
-              Welcome back, {user.username}!
+              Welcome back, {session.user?.name || session.user?.id}!
             </CardTitle>
             <CardDescription>Your World Fan account is verified and ready</CardDescription>
           </CardHeader>
@@ -197,7 +216,9 @@ export default function DashboardPage() {
                 <Globe className="w-8 h-8 text-green-600" />
                 <div>
                   <p className="font-semibold text-green-900">WorldID Verified</p>
-                  <p className="text-sm text-green-700">Level: {user.verificationLevel}</p>
+                  <p className="text-sm text-green-700">
+                    Level: {session.user?.worldcoin?.verification_level || "verified"}
+                  </p>
                 </div>
               </div>
               <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg">
@@ -427,12 +448,12 @@ export default function DashboardPage() {
               <CardContent className="space-y-6">
                 <div className="grid gap-4">
                   <div>
-                    <Label htmlFor="username">Username</Label>
-                    <Input id="username" value={user.username} readOnly className="bg-gray-50" />
+                    <Label htmlFor="user-id">User ID</Label>
+                    <Input id="user-id" value={session.user?.id || ""} readOnly className="bg-gray-50" />
                   </div>
                   <div>
                     <Label htmlFor="email">Email</Label>
-                    <Input id="email" value={user.email} readOnly className="bg-gray-50" />
+                    <Input id="email" value={session.user?.email || "Not provided"} readOnly className="bg-gray-50" />
                   </div>
                   <div>
                     <Label htmlFor="price-range">Preferred Ticket Price Range</Label>
@@ -452,7 +473,7 @@ export default function DashboardPage() {
                       <div>
                         <p className="font-medium">WorldID Verification</p>
                         <p className="text-sm text-gray-600">
-                          Verified with {user.verificationLevel} level verification
+                          Verified with {session.user?.worldcoin?.verification_level || "device"} level verification
                         </p>
                       </div>
                     </div>
