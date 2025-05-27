@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Shield, Check, AlertCircle, Globe, Smartphone, ExternalLink } from "lucide-react"
-import { MiniKit, ResponseEvent } from "@worldcoin/minikit-js"
+import { MiniKit, ResponseEvent, VerificationLevel } from "@worldcoin/minikit-js"
 
 interface WorldIDMiniKitFixedProps {
   onSuccess: (worldId: string, userInfo: any) => void
@@ -35,6 +35,9 @@ export function WorldIDMiniKitFixed({ onSuccess }: WorldIDMiniKitFixedProps) {
           isIframe: window.self !== window.top,
           timestamp: new Date().toISOString(),
           isInWorldApp: MiniKit.isInstalled(),
+          miniKitCommands: typeof MiniKit.commands === "object" ? Object.keys(MiniKit.commands) : "undefined",
+          hasSignIn: typeof MiniKit.commands?.signIn === "function",
+          hasVerify: typeof MiniKit.commands?.verify === "function",
         }
         setDebugInfo(debug)
         console.log("Debug info:", debug)
@@ -44,30 +47,16 @@ export function WorldIDMiniKitFixed({ onSuccess }: WorldIDMiniKitFixedProps) {
           setShowInstructions(true)
         }
 
+        // Subscribe to sign-in events
         MiniKit.subscribe(ResponseEvent.MiniAppSignIn, (response) => {
-          console.log("Full sign-in response:", response)
+          console.log("Sign-in response:", response)
+          handleAuthResponse(response, "signin")
+        })
 
-          if (response.status === "success") {
-            console.log("Sign-in successful:", response.payload)
-            setIsVerified(true)
-            setIsLoading(false)
-            setUserData(response.payload)
-            setError(null)
-
-            setTimeout(() => {
-              onSuccess(response.payload.nullifier_hash || "signin_user_" + Date.now(), {
-                nullifier_hash: response.payload.nullifier_hash,
-                verification_level: response.payload.verification_level,
-                timestamp: new Date().toISOString(),
-                platform: "minikit_signin_fixed",
-                payload: response.payload,
-              })
-            }, 1000)
-          } else {
-            console.error("Sign-in failed:", response.error)
-            setIsLoading(false)
-            setError(`Sign-in failed: ${response.error?.message || response.error || "Unknown error"}`)
-          }
+        // Subscribe to verification events as fallback
+        MiniKit.subscribe(ResponseEvent.MiniAppVerifyAction, (response) => {
+          console.log("Verification response:", response)
+          handleAuthResponse(response, "verify")
         })
       } catch (err: any) {
         console.error("MiniKit initialization failed:", err)
@@ -77,12 +66,37 @@ export function WorldIDMiniKitFixed({ onSuccess }: WorldIDMiniKitFixedProps) {
       return () => {
         try {
           MiniKit.unsubscribe(ResponseEvent.MiniAppSignIn)
+          MiniKit.unsubscribe(ResponseEvent.MiniAppVerifyAction)
         } catch (err) {
           console.log("Cleanup error:", err)
         }
       }
     }
   }, [onSuccess])
+
+  const handleAuthResponse = (response: any, method: string) => {
+    if (response.status === "success") {
+      console.log(`${method} successful:`, response.payload)
+      setIsVerified(true)
+      setIsLoading(false)
+      setUserData(response.payload)
+      setError(null)
+
+      setTimeout(() => {
+        onSuccess(response.payload.nullifier_hash || `${method}_user_` + Date.now(), {
+          nullifier_hash: response.payload.nullifier_hash,
+          verification_level: response.payload.verification_level,
+          timestamp: new Date().toISOString(),
+          platform: `minikit_${method}_fixed`,
+          payload: response.payload,
+        })
+      }, 1000)
+    } else {
+      console.error(`${method} failed:`, response.error)
+      setIsLoading(false)
+      setError(`${method} failed: ${response.error?.message || response.error || "Unknown error"}`)
+    }
+  }
 
   const handleSignIn = () => {
     if (typeof window === "undefined") {
@@ -99,26 +113,81 @@ export function WorldIDMiniKitFixed({ onSuccess }: WorldIDMiniKitFixedProps) {
     setIsLoading(true)
     setError(null)
 
+    const appId = process.env.NEXT_PUBLIC_WORLDCOIN_APP_ID || "app_7a9639a92f85fcf27213f982eddb5064"
+
     try {
-      console.log("MiniKit is installed, attempting sign-in...")
+      console.log("Attempting authentication with available methods...")
 
-      const appId = process.env.NEXT_PUBLIC_WORLDCOIN_APP_ID || "app_7a9639a92f85fcf27213f982eddb5064"
+      // Method 1: Try signIn if available
+      if (typeof MiniKit.commands?.signIn === "function") {
+        console.log("Using MiniKit.commands.signIn")
+        MiniKit.commands.signIn({
+          action: "signin",
+          app_id: appId,
+        })
+        console.log("Sign-in command sent successfully")
+        return
+      }
 
-      console.log("Sign-in parameters:", {
-        action: "signin",
-        app_id: appId,
-      })
+      // Method 2: Try verify as fallback
+      if (typeof MiniKit.commands?.verify === "function") {
+        console.log("Using MiniKit.commands.verify as fallback")
+        MiniKit.commands.verify({
+          action: "signin",
+          app_id: appId,
+          verification_level: VerificationLevel.Device, // Use Device level for easier testing
+        })
+        console.log("Verify command sent successfully")
+        return
+      }
 
-      MiniKit.commands.signIn({
-        action: "signin",
-        app_id: appId,
-      })
+      // Method 3: Try direct postMessage to World App
+      console.log("Trying direct postMessage to World App")
+      const message = {
+        command: "verify",
+        payload: {
+          app_id: appId,
+          action: "signin",
+          verification_level: "device",
+        },
+      }
 
-      console.log("Sign-in command sent successfully")
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage(message, "*")
+        console.log("PostMessage sent to parent window")
+
+        // Set up listener for response
+        const handleMessage = (event: MessageEvent) => {
+          if (event.data && event.data.command === "verify") {
+            window.removeEventListener("message", handleMessage)
+            if (event.data.success) {
+              handleAuthResponse({ status: "success", payload: event.data.payload }, "postmessage")
+            } else {
+              setIsLoading(false)
+              setError(`Verification failed: ${event.data.error || "Unknown error"}`)
+            }
+          }
+        }
+
+        window.addEventListener("message", handleMessage)
+
+        // Timeout after 30 seconds
+        setTimeout(() => {
+          window.removeEventListener("message", handleMessage)
+          if (isLoading) {
+            setIsLoading(false)
+            setError("Verification timeout. Please try again.")
+          }
+        }, 30000)
+
+        return
+      }
+
+      throw new Error("No available authentication methods found")
     } catch (err: any) {
-      console.error("Sign-in command failed:", err)
+      console.error("Authentication failed:", err)
       setIsLoading(false)
-      setError(`Sign-in command failed: ${err.message}`)
+      setError(`Authentication failed: ${err.message}`)
     }
   }
 
@@ -284,6 +353,12 @@ export function WorldIDMiniKitFixed({ onSuccess }: WorldIDMiniKitFixedProps) {
             <p>User Agent: {debugInfo.userAgent?.slice(0, 80)}...</p>
             <p>App ID: {process.env.NEXT_PUBLIC_WORLDCOIN_APP_ID || "app_7a9639a92f85fcf27213f982eddb5064"}</p>
             <p>Action: signin</p>
+            <p>
+              <strong>MiniKit Commands:</strong>
+            </p>
+            <p>Available Commands: {debugInfo.miniKitCommands || "undefined"}</p>
+            <p>Has signIn: {debugInfo.hasSignIn ? "✓" : "✗"}</p>
+            <p>Has verify: {debugInfo.hasVerify ? "✓" : "✗"}</p>
             {userData && (
               <div className="mt-2">
                 <p>
@@ -317,10 +392,10 @@ export function WorldIDMiniKitFixed({ onSuccess }: WorldIDMiniKitFixedProps) {
                 )}
               </Button>
 
-              {!debugInfo.isInWorldApp && (
-                <Button onClick={() => setShowInstructions(true)} variant="outline" className="w-full" size="sm">
-                  <Smartphone className="w-4 h-4 mr-2" />
-                  Need help? Show World App instructions
+              {debugInfo.isInWorldApp && (
+                <Button onClick={handleDevelopmentMode} variant="outline" className="w-full" size="sm">
+                  <Check className="w-4 h-4 mr-2" />
+                  Continue with Development Mode (Testing)
                 </Button>
               )}
             </div>
