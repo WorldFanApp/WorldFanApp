@@ -16,8 +16,12 @@ export function WorldIDMiniKitFixed({ onSuccess }: WorldIDMiniKitFixedProps) {
   const [error, setError] = useState<string | null>(null)
   const [userData, setUserData] = useState<any>(null)
   const [debugInfo, setDebugInfo] = useState<any>({})
+  const [isClient, setIsClient] = useState(false)
 
   useEffect(() => {
+    // Set client flag first
+    setIsClient(true)
+
     // Only run on client side
     if (typeof window !== "undefined") {
       try {
@@ -80,6 +84,11 @@ export function WorldIDMiniKitFixed({ onSuccess }: WorldIDMiniKitFixedProps) {
   }, [onSuccess])
 
   const handleSignIn = () => {
+    if (typeof window === "undefined") {
+      setError("Window not available")
+      return
+    }
+
     setIsLoading(true)
     setError(null)
 
@@ -113,6 +122,24 @@ export function WorldIDMiniKitFixed({ onSuccess }: WorldIDMiniKitFixedProps) {
       setIsLoading(false)
       setError(`Sign-in command failed: ${err.message}`)
     }
+  }
+
+  // Show loading state during SSR
+  if (!isClient) {
+    return (
+      <>
+        <CardHeader className="text-center">
+          <div className="w-16 h-16 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Globe className="w-8 h-8 text-white" />
+          </div>
+          <CardTitle>World Fan Sign-In</CardTitle>
+          <CardDescription>Loading World ID authentication...</CardDescription>
+        </CardHeader>
+        <CardContent className="text-center">
+          <div className="w-4 h-4 border-2 border-purple-600 border-t-transparent rounded-full animate-spin mx-auto" />
+        </CardContent>
+      </>
+    )
   }
 
   return (

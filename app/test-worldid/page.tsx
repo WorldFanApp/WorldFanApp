@@ -9,6 +9,8 @@ export default function TestWorldIDPage() {
   const [status, setStatus] = useState<string>("Initializing...")
   const [logs, setLogs] = useState<string[]>([])
   const [response, setResponse] = useState<any>(null)
+  const [isClient, setIsClient] = useState(false)
+  const [envInfo, setEnvInfo] = useState<any>({})
 
   const addLog = (message: string) => {
     const timestamp = new Date().toLocaleTimeString()
@@ -17,7 +19,21 @@ export default function TestWorldIDPage() {
   }
 
   useEffect(() => {
+    // Set client flag
+    setIsClient(true)
+
     if (typeof window !== "undefined") {
+      // Collect environment info safely
+      const info = {
+        userAgent: navigator.userAgent,
+        url: window.location.href,
+        hasWorldApp: typeof (window as any).WorldApp !== "undefined",
+        isIframe: window.self !== window.top,
+        hasParent: window.parent !== window,
+        appId: process.env.NEXT_PUBLIC_WORLDCOIN_APP_ID,
+      }
+      setEnvInfo(info)
+
       addLog("Window is available, initializing MiniKit...")
 
       try {
@@ -54,6 +70,11 @@ export default function TestWorldIDPage() {
   }, [])
 
   const testSignIn = () => {
+    if (typeof window === "undefined") {
+      addLog("Window not available")
+      return
+    }
+
     addLog("Testing sign-in...")
     setStatus("Attempting sign-in...")
 
@@ -79,6 +100,20 @@ export default function TestWorldIDPage() {
     setResponse(null)
   }
 
+  // Show loading state during SSR
+  if (!isClient) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-4 flex items-center justify-center">
+        <Card>
+          <CardContent className="p-8 text-center">
+            <div className="w-8 h-8 border-2 border-purple-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+            <p>Loading World ID Test Page...</p>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 p-4">
       <div className="max-w-4xl mx-auto space-y-6">
@@ -90,10 +125,10 @@ export default function TestWorldIDPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="font-medium">Status: {status}</p>
-                <p className="text-sm text-gray-600">App ID: {process.env.NEXT_PUBLIC_WORLDCOIN_APP_ID}</p>
+                <p className="text-sm text-gray-600">App ID: {envInfo.appId}</p>
               </div>
               <div className="space-x-2">
-                <Button onClick={testSignIn} disabled={!MiniKit.isInstalled()}>
+                <Button onClick={testSignIn} disabled={typeof window === "undefined" || !MiniKit.isInstalled()}>
                   Test Sign-In
                 </Button>
                 <Button onClick={clearLogs} variant="outline">
@@ -114,28 +149,29 @@ export default function TestWorldIDPage() {
                 <p>
                   <strong>User Agent:</strong>
                 </p>
-                <p className="text-xs break-all">{navigator.userAgent}</p>
+                <p className="text-xs break-all">{envInfo.userAgent || "Loading..."}</p>
               </div>
               <div>
                 <p>
                   <strong>URL:</strong>
                 </p>
-                <p className="text-xs break-all">{window.location.href}</p>
+                <p className="text-xs break-all">{envInfo.url || "Loading..."}</p>
               </div>
               <div>
                 <p>
-                  <strong>MiniKit Installed:</strong> {MiniKit.isInstalled() ? "✅" : "❌"}
+                  <strong>MiniKit Installed:</strong>{" "}
+                  {typeof window !== "undefined" && MiniKit.isInstalled() ? "✅" : "❌"}
                 </p>
                 <p>
-                  <strong>Has WorldApp:</strong> {typeof (window as any).WorldApp !== "undefined" ? "✅" : "❌"}
+                  <strong>Has WorldApp:</strong> {envInfo.hasWorldApp ? "✅" : "❌"}
                 </p>
               </div>
               <div>
                 <p>
-                  <strong>In iframe:</strong> {window.self !== window.top ? "✅" : "❌"}
+                  <strong>In iframe:</strong> {envInfo.isIframe ? "✅" : "❌"}
                 </p>
                 <p>
-                  <strong>Has parent:</strong> {window.parent !== window ? "✅" : "❌"}
+                  <strong>Has parent:</strong> {envInfo.hasParent ? "✅" : "❌"}
                 </p>
               </div>
             </div>
