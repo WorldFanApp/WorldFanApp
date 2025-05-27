@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Music, Globe, Users, Ticket } from "lucide-react"
+import { Music, Globe, Users, Ticket, Smartphone } from "lucide-react"
 import { OnboardingFlow } from "@/components/onboarding-flow"
 import Image from "next/image"
 import Link from "next/link"
@@ -55,10 +55,16 @@ export default function HomePage() {
                     >
                       Get Early Access with World ID
                     </Button>
-                    <div className="md:ml-4">
+                    <div className="md:ml-4 space-x-2">
                       <Link href="/test-worldid">
                         <Button variant="outline" size="sm" className="text-white border-white hover:bg-white/10">
                           Test World ID Integration
+                        </Button>
+                      </Link>
+                      <Link href="/world-app-instructions">
+                        <Button variant="outline" size="sm" className="text-white border-white hover:bg-white/10">
+                          <Smartphone className="w-4 h-4 mr-1" />
+                          World App Setup
                         </Button>
                       </Link>
                     </div>
