@@ -1,41 +1,46 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { signIn, useSession } from "next-auth/react"
+import { signIn, signOut, useSession } from "next-auth/react"
 import { Button } from "@/components/ui/button"
 import { CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Shield, Check, AlertCircle, User, Zap } from "lucide-react"
+import { Shield, Check, AlertCircle, User, Zap, LogOut } from "lucide-react"
 
-interface WorldIDNextAuthSignInProps {
+interface WorldIDCleanSignInProps {
   onSuccess: (worldId: string, userInfo: any) => void
   onDeveloperMode: () => void
 }
 
-export function WorldIDNextAuthSignIn({ onSuccess, onDeveloperMode }: WorldIDNextAuthSignInProps) {
+export function WorldIDCleanSignIn({ onSuccess, onDeveloperMode }: WorldIDCleanSignInProps) {
   const [isSigningIn, setIsSigningIn] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const { data: session, status } = useSession()
 
   useEffect(() => {
     if (session?.user) {
-      console.log("NextAuth session found:", session)
+      console.log("NextAuth session established:", session)
+
+      // Create user data from session
       const userData = {
-        worldId: session.user.id || `nextauth_${Date.now()}`,
+        worldId: session.user.id || `worldid_${Date.now()}`,
         nullifierHash: session.user.id || `nullifier_${Date.now()}`,
-        verificationLevel: "nextauth",
+        verificationLevel: "worldid_verified",
         isHumanVerified: true,
         verifiedAt: new Date().toISOString(),
-        platform: "nextauth",
+        platform: "nextauth_worldid",
         username: session.user.name || `worldfan_${Date.now().toString().slice(-6)}`,
         email: session.user.email || "",
         image: session.user.image || "",
+        // Default preferences
         genres: [],
         cities: [],
         favoriteArtists: "",
         ticketStruggles: "",
         priceRange: "$50-150",
         notifications: true,
+        session: session,
       }
+
       onSuccess(userData.worldId, userData)
     }
   }, [session, onSuccess])
@@ -45,31 +50,92 @@ export function WorldIDNextAuthSignIn({ onSuccess, onDeveloperMode }: WorldIDNex
     setError(null)
 
     try {
+      console.log("Starting World ID sign-in via NextAuth...")
+
       const result = await signIn("worldcoin", {
         redirect: false,
-        callbackUrl: window.location.origin,
+        callbackUrl: "/dashboard",
       })
 
+      console.log("NextAuth sign-in result:", result)
+
       if (result?.error) {
-        setError(result.error)
+        setError(`Authentication failed: ${result.error}`)
+      } else if (result?.ok) {
+        console.log("Sign-in successful, waiting for session...")
       }
     } catch (error: any) {
-      console.error("Sign in error:", error)
-      setError(error.message || "Sign in failed")
+      console.error("Sign-in error:", error)
+      setError(`Sign-in failed: ${error.message}`)
     } finally {
       setIsSigningIn(false)
     }
   }
 
+  const handleSignOut = async () => {
+    try {
+      await signOut({ redirect: false })
+      setError(null)
+    } catch (error: any) {
+      console.error("Sign out error:", error)
+    }
+  }
+
+  // Loading state
   if (status === "loading") {
     return (
-      <div className="text-center p-8">
-        <div className="w-8 h-8 border-2 border-purple-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-        <p>Checking authentication...</p>
-      </div>
+      <>
+        <CardHeader className="text-center">
+          <div className="w-16 h-16 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+            <div className="w-8 h-8 border-2 border-white border-t-transparent rounded-full animate-spin" />
+          </div>
+          <CardTitle>Loading...</CardTitle>
+          <CardDescription>Checking your authentication status...</CardDescription>
+        </CardHeader>
+      </>
     )
   }
 
+  // Authenticated state
+  if (session?.user) {
+    return (
+      <>
+        <CardHeader className="text-center">
+          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Check className="w-8 h-8 text-green-600" />
+          </div>
+          <CardTitle>Welcome to World Fan!</CardTitle>
+          <CardDescription>Successfully authenticated with World ID</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="bg-green-50 p-4 rounded-lg">
+            <h4 className="font-semibold text-green-900 mb-2">Authentication Details</h4>
+            <div className="text-sm text-green-800 space-y-1">
+              <p>
+                <strong>Name:</strong> {session.user.name || "World ID User"}
+              </p>
+              <p>
+                <strong>Email:</strong> {session.user.email || "Not provided"}
+              </p>
+              <p>
+                <strong>Provider:</strong> World ID via NextAuth
+              </p>
+              <p>
+                <strong>Status:</strong> Verified Human
+              </p>
+            </div>
+          </div>
+
+          <Button onClick={handleSignOut} variant="outline" className="w-full">
+            <LogOut className="w-4 h-4 mr-2" />
+            Sign Out
+          </Button>
+        </CardContent>
+      </>
+    )
+  }
+
+  // Sign-in interface
   return (
     <>
       <CardHeader className="text-center">
@@ -78,7 +144,7 @@ export function WorldIDNextAuthSignIn({ onSuccess, onDeveloperMode }: WorldIDNex
         </div>
         <CardTitle>Sign in with World ID</CardTitle>
         <CardDescription>
-          Use Worldcoin's secure authentication to access World Fan's exclusive music experiences
+          Secure authentication for accessing fair-priced tickets and exclusive vinyl drops
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -86,22 +152,22 @@ export function WorldIDNextAuthSignIn({ onSuccess, onDeveloperMode }: WorldIDNex
           <div className="flex items-center gap-3 p-3 bg-green-50 rounded-lg">
             <Shield className="w-5 h-5 text-green-600" />
             <div>
-              <p className="font-medium text-green-900">Secure Authentication</p>
-              <p className="text-sm text-green-700">Sign in securely with your World ID</p>
+              <p className="font-medium text-green-900">Secure & Private</p>
+              <p className="text-sm text-green-700">Your identity stays protected</p>
             </div>
           </div>
           <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg">
             <Check className="w-5 h-5 text-blue-600" />
             <div>
-              <p className="font-medium text-blue-900">Privacy Protected</p>
-              <p className="text-sm text-blue-700">Your identity stays private and secure</p>
+              <p className="font-medium text-blue-900">Human Verified</p>
+              <p className="text-sm text-blue-700">Proof you're a real person, not a bot</p>
             </div>
           </div>
           <div className="flex items-center gap-3 p-3 bg-purple-50 rounded-lg">
             <User className="w-5 h-5 text-purple-600" />
             <div>
               <p className="font-medium text-purple-900">Exclusive Access</p>
-              <p className="text-sm text-purple-700">Access fair tickets and exclusive vinyl drops</p>
+              <p className="text-sm text-purple-700">Fair tickets and limited vinyl releases</p>
             </div>
           </div>
         </div>
@@ -110,7 +176,7 @@ export function WorldIDNextAuthSignIn({ onSuccess, onDeveloperMode }: WorldIDNex
           <div className="flex items-center gap-3 p-3 bg-red-50 rounded-lg">
             <AlertCircle className="w-5 h-5 text-red-600" />
             <div>
-              <p className="font-medium text-red-900">Sign In Error</p>
+              <p className="font-medium text-red-900">Authentication Error</p>
               <p className="text-sm text-red-700">{error}</p>
             </div>
           </div>
@@ -137,7 +203,7 @@ export function WorldIDNextAuthSignIn({ onSuccess, onDeveloperMode }: WorldIDNex
           </Button>
 
           <div className="text-center">
-            <p className="text-sm text-gray-600 mb-2">Want to test the app first?</p>
+            <p className="text-sm text-gray-600 mb-2">Want to test the app features?</p>
             <Button onClick={onDeveloperMode} variant="outline" size="sm">
               <Zap className="w-4 h-4 mr-2" />
               Continue with Developer Mode

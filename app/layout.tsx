@@ -7,8 +7,8 @@ import { Providers } from "@/components/providers"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "World Fan - Fair Music Access",
-  description: "Get fair access to concert tickets and exclusive vinyl drops with World ID verification",
+  title: "World Fan - Fair Music Experiences",
+  description: "Get early access to exclusive vinyl drops, fair-priced tickets, and connect with artists you love.",
     generator: 'v0.dev'
 }
 

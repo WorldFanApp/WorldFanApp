@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { Card } from "@/components/ui/card"
-import { WorldIDNextAuthSignIn } from "./worldid-nextauth-signin"
+import { WorldIDCleanSignIn } from "./worldid-clean-signin"
 import { DeveloperSignup } from "./developer-signup"
 import { EnhancedDashboard } from "./enhanced-dashboard"
 
@@ -11,7 +11,7 @@ export function OnboardingFlow() {
   const [userData, setUserData] = useState<any>(null)
 
   const handleWorldIDSuccess = async (worldId: string, userInfo: any) => {
-    console.log("NextAuth World ID authentication successful:", { worldId, userInfo })
+    console.log("World ID authentication successful:", { worldId, userInfo })
 
     // Save the World ID data
     try {
@@ -62,7 +62,7 @@ export function OnboardingFlow() {
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50 flex items-center justify-center p-4">
       {currentStep === "verification" && (
         <Card className="w-full max-w-md">
-          <WorldIDNextAuthSignIn onSuccess={handleWorldIDSuccess} onDeveloperMode={handleDeveloperMode} />
+          <WorldIDCleanSignIn onSuccess={handleWorldIDSuccess} onDeveloperMode={handleDeveloperMode} />
         </Card>
       )}
 
