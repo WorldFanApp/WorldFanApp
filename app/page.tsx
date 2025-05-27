@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Music, Globe, Users, Ticket } from "lucide-react"
 import { OnboardingFlow } from "@/components/onboarding-flow"
 import Image from "next/image"
+import Link from "next/link"
 
 export default function HomePage() {
   const [showOnboarding, setShowOnboarding] = useState(false)
@@ -46,13 +47,22 @@ export default function HomePage() {
                     Be among the first to experience fair ticket pricing, exclusive vinyl releases, and direct artist
                     connections powered by Worldcoin's verified identity.
                   </p>
-                  <Button
-                    size="lg"
-                    className="bg-white text-purple-600 hover:bg-gray-100"
-                    onClick={() => setShowOnboarding(true)}
-                  >
-                    Get Early Access with WorldID
-                  </Button>
+                  <div className="space-y-3">
+                    <Button
+                      size="lg"
+                      className="bg-white text-purple-600 hover:bg-gray-100 w-full md:w-auto"
+                      onClick={() => setShowOnboarding(true)}
+                    >
+                      Get Early Access with World ID
+                    </Button>
+                    <div className="md:ml-4">
+                      <Link href="/test-worldid">
+                        <Button variant="outline" size="sm" className="text-white border-white hover:bg-white/10">
+                          Test World ID Integration
+                        </Button>
+                      </Link>
+                    </div>
+                  </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="bg-white/10 backdrop-blur rounded-lg p-4 text-center">
@@ -88,7 +98,7 @@ export default function HomePage() {
             </CardHeader>
             <CardContent>
               <p className="text-gray-600">
-                No more bot-inflated prices. WorldID verification ensures real fans get tickets at fair prices.
+                No more bot-inflated prices. World ID verification ensures real fans get tickets at fair prices.
               </p>
             </CardContent>
           </Card>
@@ -144,15 +154,15 @@ export default function HomePage() {
           <CardContent className="p-8 text-center">
             <h3 className="text-2xl font-bold mb-4">Ready to Change Music Forever?</h3>
             <p className="text-gray-600 mb-6 max-w-2xl mx-auto">
-              Join thousands of music fans who are building the future of fair, accessible music experiences. Your
-              WorldID ensures you're a real fan, not a bot.
+              Join thousands of music fans who are building the future of fair, accessible music experiences. Your World
+              ID ensures you're a real fan, not a bot.
             </p>
             <Button
               size="lg"
               className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
               onClick={() => setShowOnboarding(true)}
             >
-              Start Your Journey with WorldID
+              Start Your Journey with World ID
             </Button>
           </CardContent>
         </Card>

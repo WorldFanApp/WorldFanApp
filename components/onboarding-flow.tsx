@@ -11,7 +11,7 @@ import { ArrowLeft, ArrowRight, Check, Globe, Music, Users, Ticket } from "lucid
 import { CitySelector } from "@/components/city-selector"
 import { GenreSelector } from "@/components/genre-selector"
 import { saveUserData } from "@/app/actions/save-user-data"
-import { WorldIDMiniKitFlexible } from "@/components/worldid-minikit-flexible"
+import { WorldIDMiniKitFixed } from "@/components/worldid-minikit-fixed"
 
 type OnboardingStep = "auth" | "profile" | "cities" | "genres" | "artists" | "complete"
 
@@ -31,7 +31,7 @@ export function OnboardingFlow() {
   })
 
   const steps = [
-    { id: "auth", title: "World ID Authentication", icon: Globe },
+    { id: "auth", title: "World ID Sign-In", icon: Globe },
     { id: "profile", title: "Profile Setup", icon: Users },
     { id: "cities", title: "Your Cities", icon: Globe },
     { id: "genres", title: "Music Taste", icon: Music },
@@ -44,7 +44,7 @@ export function OnboardingFlow() {
   const handleNext = () => {
     // Ensure World ID authentication is complete before proceeding
     if (currentStep === "auth" && (!userData.worldId || !userData.worldIdData)) {
-      alert("World ID authentication is required to continue.")
+      alert("World ID sign-in is required to continue.")
       return
     }
 
@@ -66,7 +66,7 @@ export function OnboardingFlow() {
   const handleComplete = async () => {
     // Final check for World ID authentication
     if (!userData.worldId || !userData.worldIdData) {
-      alert("World ID authentication is required. Please complete authentication first.")
+      alert("World ID sign-in is required. Please complete authentication first.")
       setCurrentStep("auth")
       return
     }
@@ -75,7 +75,7 @@ export function OnboardingFlow() {
       const result = await saveUserData(userData)
 
       if (result.success) {
-        alert(`Welcome to World Fan! Your World ID authentication is confirmed.`)
+        alert(`Welcome to World Fan! Your World ID sign-in is confirmed.`)
         // Redirect to dashboard
         window.location.href = "/dashboard"
       } else {
@@ -134,9 +134,9 @@ export function OnboardingFlow() {
         {/* Step Content */}
         <Card className="border-0 shadow-xl">
           {currentStep === "auth" && (
-            <WorldIDMiniKitFlexible
+            <WorldIDMiniKitFixed
               onSuccess={(worldId, userInfo) => {
-                console.log("World ID authentication successful:", { worldId, userInfo })
+                console.log("World ID sign-in successful:", { worldId, userInfo })
                 setUserData((prev) => ({
                   ...prev,
                   worldId,
@@ -154,13 +154,13 @@ export function OnboardingFlow() {
                   <Check className="w-5 h-5 text-green-600" />
                   World ID Verified - Setup Profile
                 </CardTitle>
-                <CardDescription>Your World ID authentication is complete. Now tell us about yourself.</CardDescription>
+                <CardDescription>Your World ID sign-in is complete. Now tell us about yourself.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex items-center gap-3 p-3 bg-green-50 rounded-lg mb-4">
                   <Check className="w-5 h-5 text-green-600" />
                   <div>
-                    <p className="font-medium text-green-900">World ID Authenticated</p>
+                    <p className="font-medium text-green-900">World ID Verified</p>
                     <p className="text-sm text-green-700">Platform: {userData.worldIdData?.platform || "MiniKit"}</p>
                   </div>
                 </div>
@@ -259,14 +259,14 @@ export function OnboardingFlow() {
               <CardHeader>
                 <CardTitle className="text-center">Welcome to World Fan! 🎵</CardTitle>
                 <CardDescription className="text-center">
-                  Your World ID authentication is complete. Here's what happens next:
+                  Your World ID sign-in is complete. Here's what happens next:
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="flex items-center gap-3 p-3 bg-green-50 rounded-lg">
                   <Check className="w-5 h-5 text-green-600" />
                   <div>
-                    <p className="font-medium text-green-900">World ID Authenticated</p>
+                    <p className="font-medium text-green-900">World ID Verified</p>
                     <p className="text-sm text-green-700">
                       You're protected from bots and scalpers with verified human identity
                     </p>
