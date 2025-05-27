@@ -8,6 +8,7 @@ declare module "next-auth" {
       worldcoin?: {
         verification_level: string
         nullifier_hash: string
+        access_token?: string
       }
     }
   }
@@ -17,7 +18,10 @@ declare module "next-auth" {
     name?: string | null
     email?: string | null
     image?: string | null
-    verificationLevel?: string
+    worldcoin?: {
+      verification_level: string
+      nullifier_hash: string
+    }
   }
 }
 
@@ -26,6 +30,7 @@ declare module "next-auth/jwt" {
     worldcoin?: {
       verification_level: string
       nullifier_hash: string
+      access_token?: string
     }
   }
 }

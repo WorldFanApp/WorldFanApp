@@ -1,21 +1,14 @@
 import type React from "react"
 import type { Metadata } from "next"
 import { Inter } from "next/font/google"
-import { Providers } from "@/components/providers"
 import "./globals.css"
+import { Providers } from "@/components/providers"
 
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "World Fan - Music Experiences on Worldcoin",
-  description:
-    "Join World Fan for exclusive vinyl drops, fair-priced tickets, and direct artist connections powered by WorldID verification.",
-  keywords: ["music", "vinyl", "tickets", "worldcoin", "worldid", "concerts", "artists"],
-  openGraph: {
-    title: "World Fan - Music Experiences on Worldcoin",
-    description: "Join World Fan for exclusive vinyl drops, fair-priced tickets, and direct artist connections.",
-    images: ["/images/world-fan-logo-hq.png"],
-  },
+  title: "World Fan - Fair Music Access",
+  description: "Get fair access to concert tickets and exclusive vinyl drops with World ID verification",
     generator: 'v0.dev'
 }
 

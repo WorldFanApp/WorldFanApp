@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { Card } from "@/components/ui/card"
-import { WorldIDHumanVerification } from "./worldid-human-verification"
+import { WorldIDOpenIDSignIn } from "./worldid-openid-signin"
 import { DeveloperSignup } from "./developer-signup"
 import { EnhancedDashboard } from "./enhanced-dashboard"
 
@@ -11,7 +11,7 @@ export function OnboardingFlow() {
   const [userData, setUserData] = useState<any>(null)
 
   const handleWorldIDSuccess = async (worldId: string, userInfo: any) => {
-    console.log("World ID verification successful:", { worldId, userInfo })
+    console.log("World ID OpenID Connect successful:", { worldId, userInfo })
 
     // Save the World ID data
     try {
@@ -27,6 +27,11 @@ export function OnboardingFlow() {
       })
 
       if (response.ok) {
+        const result = await response.json()
+        setUserData(result.userData || userInfo)
+        setCurrentStep("dashboard")
+      } else {
+        // Still proceed to dashboard even if save fails
         setUserData(userInfo)
         setCurrentStep("dashboard")
       }
@@ -57,7 +62,7 @@ export function OnboardingFlow() {
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50 flex items-center justify-center p-4">
       {currentStep === "verification" && (
         <Card className="w-full max-w-md">
-          <WorldIDHumanVerification onSuccess={handleWorldIDSuccess} onDeveloperMode={handleDeveloperMode} />
+          <WorldIDOpenIDSignIn onSuccess={handleWorldIDSuccess} onDeveloperMode={handleDeveloperMode} />
         </Card>
       )}
 
