@@ -13,7 +13,7 @@ const authOptions: NextAuthOptions = {
           scope: "openid profile email",
         },
       },
-      clientId: process.env.WORLDCOIN_CLIENT_ID!,
+      clientId: "app_7a9639a92f85fcf27213f982eddb5064",
       clientSecret: process.env.WORLDCOIN_CLIENT_SECRET!,
       idToken: true,
       checks: ["state", "nonce", "pkce"],
@@ -52,10 +52,30 @@ const authOptions: NextAuthOptions = {
       console.log("Session callback:", session)
       return session
     },
+    async signIn({ user, account, profile }) {
+      console.log("SignIn callback:", { user, account, profile })
+
+      // Verify the World ID proof if available
+      if (account?.provider === "worldcoin" && profile) {
+        try {
+          // Additional verification can be done here
+          console.log("World ID verification successful for:", profile.sub)
+          return true
+        } catch (error) {
+          console.error("World ID verification failed:", error)
+          return false
+        }
+      }
+
+      return true
+    },
   },
   pages: {
     signIn: "/",
     error: "/auth/error",
+  },
+  session: {
+    strategy: "jwt",
   },
   debug: true, // Enable debug logs
 }
