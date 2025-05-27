@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Shield, Check, AlertCircle, Globe, Smartphone, ExternalLink } from "lucide-react"
-import { MiniKit, ResponseEvent, VerificationLevel } from "@worldcoin/minikit-js"
+import { MiniKit, ResponseEvent } from "@worldcoin/minikit-js"
 
 interface WorldIDMiniKitFixedProps {
   onSuccess: (worldId: string, userInfo: any) => void
@@ -130,11 +130,11 @@ export function WorldIDMiniKitFixed({ onSuccess }: WorldIDMiniKitFixedProps) {
       console.log("App ID:", appId)
       console.log("Verification attempt:", verificationAttempts + 1)
 
-      // Use the verify command since it's available
+      // Use the verify command since it's available (signIn is not available)
       MiniKit.commands.verify({
         action: "signin", // Keep the action as "signin"
         app_id: appId,
-        verification_level: VerificationLevel.Device, // Use Device level for easier verification
+        verification_level: "device", // Use device level for easier verification
       })
 
       console.log("Verify command sent successfully")

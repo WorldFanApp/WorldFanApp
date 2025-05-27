@@ -35,9 +35,9 @@ export function WorldIDNextAuth({ onSuccess }: WorldIDNextAuthProps) {
         setDebugInfo(debug)
         console.log("Debug info:", debug)
 
-        // Subscribe to MiniKit sign-in events
-        MiniKit.subscribe(ResponseEvent.MiniAppSignIn, async (response) => {
-          console.log("MiniKit sign-in response:", response)
+        // Subscribe to MiniKit verification events (not sign-in events)
+        MiniKit.subscribe(ResponseEvent.MiniAppVerifyAction, async (response) => {
+          console.log("MiniKit verification response:", response)
 
           if (response.status === "success") {
             setIsLoading(true)
@@ -61,7 +61,7 @@ export function WorldIDNextAuth({ onSuccess }: WorldIDNextAuthProps) {
               setIsLoading(false)
             }
           } else {
-            console.error("MiniKit sign-in failed:", response.error)
+            console.error("MiniKit verification failed:", response.error)
             setError(`World ID verification failed: ${response.error?.message || "Unknown error"}`)
           }
         })
@@ -72,7 +72,7 @@ export function WorldIDNextAuth({ onSuccess }: WorldIDNextAuthProps) {
 
       return () => {
         try {
-          MiniKit.unsubscribe(ResponseEvent.MiniAppSignIn)
+          MiniKit.unsubscribe(ResponseEvent.MiniAppVerifyAction)
         } catch (err) {
           console.log("Cleanup error:", err)
         }
@@ -104,16 +104,18 @@ export function WorldIDNextAuth({ onSuccess }: WorldIDNextAuthProps) {
     setError(null)
 
     try {
-      console.log("Starting World ID sign-in with MiniKit...")
+      console.log("Starting World ID verification with MiniKit.commands.verify...")
 
-      MiniKit.commands.signIn({
+      // Use verify instead of signIn since signIn is not available
+      MiniKit.commands.verify({
         action: process.env.NEXT_PUBLIC_WORLDCOIN_ACTION || "signin",
         app_id: process.env.NEXT_PUBLIC_WORLDCOIN_APP_ID!,
+        verification_level: "device", // Use device level as shown in debug info
       })
 
-      console.log("MiniKit sign-in command sent")
+      console.log("MiniKit verify command sent")
     } catch (err: any) {
-      console.error("MiniKit sign-in command failed:", err)
+      console.error("MiniKit verify command failed:", err)
       setIsLoading(false)
       setError(`Failed to start World ID verification: ${err.message}`)
     }
