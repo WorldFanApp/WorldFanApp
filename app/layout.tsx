@@ -2,13 +2,12 @@ import type React from "react"
 import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
-import { MiniKitProvider } from "@/components/minikit-provider"
 
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "World Fan - Music Experiences on Worldcoin",
-  description: "Fair-priced tickets and exclusive vinyl drops for music fans",
+  title: "World Fan",
+  description: "Music experiences on Worldcoin",
     generator: 'v0.dev'
 }
 
@@ -19,9 +18,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={inter.className}>
-        <MiniKitProvider>{children}</MiniKitProvider>
-      </body>
+      <body className={inter.className}>{children}</body>
     </html>
   )
 }
