@@ -1,5 +1,33 @@
-import NextAuth from "next-auth"
-import type { NextAuthOptions } from "next-auth"
+import NextAuth from "next-auth";
+import WorldIDProvider from "next-auth/providers/worldid";
+
+export default NextAuth({
+  providers: [
+    WorldIDProvider({
+      clientId: process.env.WORLD_ID_CLIENT_ID,
+      clientSecret: process.env.WORLD_ID_CLIENT_SECRET,
+      issuer: "https://id.worldcoin.org",
+      redirectUri: process.env.NEXTAUTH_URL + "/api/auth/callback/worldid",
+      authorization: {
+        params: {
+          scope: "openid profile",
+        },
+      },
+    }),
+  ],
+  callbacks: {
+    async jwt({ token, user }) {
+      if (user) {
+        token.id = user.id;
+      }
+      return token;
+    },
+    async session({ session, token }) {
+      session.user.id = token.id;
+      return session;
+    },
+  },
+});
 
 const authOptions: NextAuthOptions = {
   providers: [
