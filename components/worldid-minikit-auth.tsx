@@ -1,202 +1,152 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Shield, Check, AlertCircle, Globe } from "lucide-react"
-import { MiniKit, VerificationLevel, type MiniAppVerifyActionPayload } from "@worldcoin/minikit-js"
+import { Shield, AlertCircle, Zap } from "lucide-react"
+import { MiniKit, VerificationLevel } from "@minikit-js/react"
 
 interface WorldIDMiniKitAuthProps {
-  onSuccess: (worldId: string, userInfo: any) => void
+  onSuccess: (userData: any) => void
+  onDeveloperMode: () => void
 }
 
-export function WorldIDMiniKitAuth({ onSuccess }: WorldIDMiniKitAuthProps) {
-  const [isLoading, setIsLoading] = useState(false)
-  const [isVerified, setIsVerified] = useState(false)
+export function WorldIDMiniKitAuth({ onSuccess, onDeveloperMode }: WorldIDMiniKitAuthProps) {
+  const [isVerifying, setIsVerifying] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [isMiniKitReady, setIsMiniKitReady] = useState(false)
+  const [debugInfo, setDebugInfo] = useState<any>(null)
 
-  useEffect(() => {
-    // Initialize MiniKit
-    if (!MiniKit.isInstalled()) {
-      setError("This app must be opened in the World App")
-      return
-    }
-
-    // Install MiniKit
-    MiniKit.install()
-    setIsMiniKitReady(true)
-
-    console.log("MiniKit installed successfully")
-  }, [])
-
-  const handleWorldIDSignIn = async () => {
-    if (!isMiniKitReady) {
-      setError("MiniKit is not ready. Please ensure you're using the World App.")
-      return
-    }
-
-    setIsLoading(true)
+  const handleVerify = async () => {
+    setIsVerifying(true)
     setError(null)
 
     try {
-      console.log("Starting World ID verification with MiniKit...")
-
-      const verifyPayload: MiniAppVerifyActionPayload = {
-        action: "world_fan_signup",
-        signal: "world_fan_user_" + Date.now(),
-        verification_level: VerificationLevel.Orb,
+      // Check if MiniKit is available
+      if (!MiniKit.isInstalled()) {
+        throw new Error("MiniKit is not installed. Please open this app in the World App.")
       }
 
-      console.log("Verification payload:", verifyPayload)
-
-      const verifyResponse = await MiniKit.commandsAsync.verify(verifyPayload)
-
-      console.log("MiniKit verify response:", verifyResponse)
-
-      if (verifyResponse.success) {
-        // Verify the proof on the server
-        const serverResponse = await fetch("/api/worldid/verify-minikit", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            payload: verifyPayload,
-            proof: verifyResponse.proof,
-            merkle_root: verifyResponse.merkle_root,
-            nullifier_hash: verifyResponse.nullifier_hash,
-            verification_level: verifyResponse.verification_level,
-          }),
-        })
-
-        const serverResult = await serverResponse.json()
-
-        if (serverResult.success) {
-          setIsVerified(true)
-          setIsLoading(false)
-
-          setTimeout(() => {
-            onSuccess(serverResult.nullifier_hash, {
-              nullifier_hash: serverResult.nullifier_hash,
-              verification_level: serverResult.verification_level,
-              timestamp: new Date().toISOString(),
-              platform: "minikit",
-            })
-          }, 1000)
-        } else {
-          throw new Error(serverResult.error || "Server verification failed")
-        }
-      } else {
-        throw new Error(verifyResponse.error || "World ID verification failed")
+      // Get debug information
+      const commands = MiniKit.commands
+      const debugData = {
+        isInstalled: MiniKit.isInstalled(),
+        commands: Object.keys(commands || {}),
+        hasVerify: typeof commands?.verify === "function",
+        userAgent: navigator.userAgent,
       }
+      setDebugInfo(debugData)
+      console.log("MiniKit Debug Info:", debugData)
+
+      // Use the verify command
+      const { finalPayload } = await MiniKit.commands.verify({
+        action: "verify-human", // Use a simple action name
+        signal: "worldfan-verification",
+        verification_level: VerificationLevel.Device, // Start with device level
+      })
+
+      console.log("Verification successful:", finalPayload)
+
+      // Create user data from the verification result
+      const userData = {
+        id: `worldid_${Date.now()}`,
+        name: "World ID User",
+        email: "user@worldfan.app",
+        image: "",
+        worldcoin: {
+          verification_level: finalPayload.verification_level,
+          nullifier_hash: finalPayload.nullifier_hash,
+          merkle_root: finalPayload.merkle_root,
+          proof: finalPayload.proof,
+          verified_at: new Date().toISOString(),
+        },
+      }
+
+      onSuccess(userData)
     } catch (err: any) {
-      console.error("World ID verification error:", err)
-      setIsLoading(false)
-      setError(err.message || "World ID verification failed. Please try again.")
+      console.error("Verification error:", err)
+      setError(err.message || "Verification failed. Please try again.")
+    } finally {
+      setIsVerifying(false)
     }
   }
 
-  if (!isMiniKitReady && !error) {
-    return (
-      <>
-        <CardHeader className="text-center">
-          <div className="w-16 h-16 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Globe className="w-8 h-8 text-white" />
-          </div>
-          <CardTitle>Initializing World ID</CardTitle>
-          <CardDescription>Setting up MiniKit for World ID verification...</CardDescription>
-        </CardHeader>
-        <CardContent className="text-center">
-          <div className="w-4 h-4 border-2 border-purple-600 border-t-transparent rounded-full animate-spin mx-auto" />
-        </CardContent>
-      </>
-    )
-  }
-
   return (
-    <>
-      <CardHeader className="text-center">
-        <div className="w-16 h-16 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
-          <Globe className="w-8 h-8 text-white" />
-        </div>
-        <CardTitle>Sign in with World ID</CardTitle>
-        <CardDescription>
-          Verify your identity with World ID to access World Fan's exclusive music experiences
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        <div className="grid gap-4">
-          <div className="flex items-center gap-3 p-3 bg-green-50 rounded-lg">
-            <Shield className="w-5 h-5 text-green-600" />
-            <div>
-              <p className="font-medium text-green-900">Privacy Protected</p>
-              <p className="text-sm text-green-700">Your identity stays private, we only verify you're human</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg">
-            <Check className="w-5 h-5 text-blue-600" />
-            <div>
-              <p className="font-medium text-blue-900">Anti-Bot Protection</p>
-              <p className="text-sm text-blue-700">Prevents scalpers and bots from accessing fair-priced tickets</p>
-            </div>
-          </div>
-        </div>
+    <div className="space-y-4">
+      <Button
+        onClick={handleVerify}
+        disabled={isVerifying}
+        className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+        size="lg"
+      >
+        {isVerifying ? (
+          <>
+            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+            Verifying with World ID...
+          </>
+        ) : (
+          <>
+            <Shield className="w-4 h-4 mr-2" />
+            Verify with World ID
+          </>
+        )}
+      </Button>
 
-        {error && (
-          <div className="flex items-center gap-3 p-3 bg-red-50 rounded-lg">
-            <AlertCircle className="w-5 h-5 text-red-600" />
+      {error && (
+        <div className="space-y-3">
+          <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+            <AlertCircle className="w-4 h-4 text-red-600 mt-0.5 flex-shrink-0" />
             <div>
-              <p className="font-medium text-red-900">Verification Error</p>
+              <p className="text-sm font-medium text-red-900">Verification Error</p>
               <p className="text-sm text-red-700">{error}</p>
             </div>
           </div>
-        )}
 
-        <div className="text-center">
-          {!isVerified ? (
-            <Button
-              onClick={handleWorldIDSignIn}
-              disabled={isLoading || !isMiniKitReady}
-              className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
-              size="lg"
-            >
-              {isLoading ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                  Verifying with World ID...
-                </>
-              ) : (
-                <>
-                  <Globe className="w-4 h-4 mr-2" />
-                  Sign in with World ID
-                </>
-              )}
+          <div className="flex gap-2">
+            <Button onClick={handleVerify} variant="outline" size="sm" className="flex-1">
+              Try Again
             </Button>
-          ) : (
-            <div className="text-center">
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Check className="w-8 h-8 text-green-600" />
-              </div>
-              <p className="text-green-600 font-medium">World ID Verification Complete!</p>
-              <p className="text-sm text-gray-600">Welcome to World Fan...</p>
-            </div>
-          )}
+            <Button onClick={onDeveloperMode} variant="outline" size="sm" className="flex-1">
+              Use Development Mode
+            </Button>
+          </div>
         </div>
+      )}
 
-        <div className="text-xs text-gray-500 text-center">
-          <p>
-            By signing in with World ID, you agree to our{" "}
-            <a href="#" className="text-purple-600 hover:underline">
-              Terms of Service
-            </a>{" "}
-            and{" "}
-            <a href="#" className="text-purple-600 hover:underline">
-              Privacy Policy
-            </a>
-          </p>
-        </div>
-      </CardContent>
-    </>
+      {debugInfo && (
+        <details className="text-xs bg-gray-50 p-3 rounded border">
+          <summary className="cursor-pointer font-medium text-gray-700 mb-2">
+            Debug Information (Click to expand)
+          </summary>
+          <div className="space-y-1 text-gray-600">
+            <p>
+              <strong>Environment:</strong>
+            </p>
+            <p>MiniKit Installed: {debugInfo.isInstalled ? "✓" : "✗"}</p>
+            <p>Has WorldApp: {navigator.userAgent.includes("WorldApp") ? "✓" : "✗"}</p>
+            <p>In iframe: {window.self !== window.top ? "✓" : "✗"}</p>
+            <p>URL: {window.location.href}</p>
+            <p>User Agent: {debugInfo.userAgent.slice(0, 50)}...</p>
+            <p>App ID: app_7a9639a92f85fcf27213f982eddb5064</p>
+            <p>Action: verify-human</p>
+            <p>Verification Level: Device</p>
+            <p>
+              <strong>MiniKit Commands:</strong>
+            </p>
+            <p>Available Commands: {debugInfo.commands.join(", ")}</p>
+            <p>Has verify: {debugInfo.hasVerify ? "✓" : "✗"}</p>
+          </div>
+        </details>
+      )}
+
+      <div className="text-center">
+        <Button onClick={onDeveloperMode} variant="ghost" size="sm" className="text-xs">
+          <Zap className="w-3 h-3 mr-1" />
+          Continue with Development Mode (Testing)
+        </Button>
+      </div>
+
+      <div className="text-xs text-gray-500 text-center">
+        <p>This uses the official MiniKit SDK for World ID verification</p>
+      </div>
+    </div>
   )
 }

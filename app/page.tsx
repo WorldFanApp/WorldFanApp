@@ -1,22 +1,58 @@
 "use client"
 
-import { useSession, signIn } from "next-auth/react"
-import { Button } from "@/components/ui/button"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Music, Users, Ticket, Shield, Check } from "lucide-react"
 import { Dashboard } from "@/components/dashboard"
+import { WorldIDMiniKitAuth } from "@/components/worldid-minikit-auth"
 import Image from "next/image"
 
 export default function HomePage() {
-  const { data: session, status } = useSession()
+  const [user, setUser] = useState<any>(null)
+  const [isLoading, setIsLoading] = useState(true)
 
-  // Show dashboard if authenticated
-  if (session?.user) {
-    return <Dashboard user={session.user} />
+  useEffect(() => {
+    // Check for existing session
+    const savedUser = localStorage.getItem("worldfan_user")
+    if (savedUser) {
+      try {
+        setUser(JSON.parse(savedUser))
+      } catch (error) {
+        console.error("Failed to parse saved user:", error)
+        localStorage.removeItem("worldfan_user")
+      }
+    }
+    setIsLoading(false)
+  }, [])
+
+  const handleAuthSuccess = (userData: any) => {
+    console.log("Authentication successful:", userData)
+    setUser(userData)
+    localStorage.setItem("worldfan_user", JSON.stringify(userData))
+  }
+
+  const handleSignOut = () => {
+    setUser(null)
+    localStorage.removeItem("worldfan_user")
+  }
+
+  const handleDeveloperMode = () => {
+    const devUser = {
+      id: `dev_${Date.now()}`,
+      name: "Developer User",
+      email: "dev@worldfan.app",
+      image: "",
+      worldcoin: {
+        verification_level: "device",
+        nullifier_hash: `dev_nullifier_${Date.now()}`,
+        verified_at: new Date().toISOString(),
+      },
+    }
+    handleAuthSuccess(devUser)
   }
 
   // Show loading state
-  if (status === "loading") {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50 flex items-center justify-center">
         <div className="text-center">
@@ -25,6 +61,11 @@ export default function HomePage() {
         </div>
       </div>
     )
+  }
+
+  // Show dashboard if authenticated
+  if (user) {
+    return <Dashboard user={user} onSignOut={handleSignOut} />
   }
 
   // Show sign-in page
@@ -86,14 +127,7 @@ export default function HomePage() {
                 </div>
               </div>
 
-              <Button
-                onClick={() => signIn("worldcoin")}
-                className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
-                size="lg"
-              >
-                <Shield className="w-4 h-4 mr-2" />
-                Sign in with World ID
-              </Button>
+              <WorldIDMiniKitAuth onSuccess={handleAuthSuccess} onDeveloperMode={handleDeveloperMode} />
 
               <div className="text-xs text-gray-500 text-center">
                 <p>

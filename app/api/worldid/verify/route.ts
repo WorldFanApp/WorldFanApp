@@ -1,28 +1,69 @@
 import { type NextRequest, NextResponse } from "next/server"
 
-export async function GET(request: NextRequest) {
+export async function POST(request: NextRequest) {
   try {
-    // This would typically check session/cookie for verification status
-    // For now, we'll return a simple response
+    const body = await request.json()
+    console.log("Verification request:", body)
 
-    const searchParams = request.nextUrl.searchParams
-    const verified = searchParams.get("verified")
+    const { proof, signal, action } = body
 
-    if (verified === "true") {
-      return NextResponse.json({
-        success: true,
-        verified: true,
-        nullifier_hash: "verified_user_" + Date.now(),
-        verification_level: "orb",
-      })
+    if (!proof || !signal) {
+      return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
     }
 
-    return NextResponse.json({
-      success: false,
-      verified: false,
-    })
+    // Verify with Worldcoin's API
+    const verifyResponse = await fetch(
+      "https://developer.worldcoin.org/api/v1/verify/app_7a9639a92f85fcf27213f982eddb5064",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          nullifier_hash: proof.nullifier_hash,
+          merkle_root: proof.merkle_root,
+          proof: proof.proof,
+          verification_level: proof.verification_level,
+          action: action || "verify",
+          signal: signal || "",
+        }),
+      },
+    )
+
+    const verifyResult = await verifyResponse.json()
+    console.log("Worldcoin verification result:", verifyResult)
+
+    if (verifyResponse.ok && verifyResult.success) {
+      // Create user session
+      const userData = {
+        worldId: proof.nullifier_hash,
+        nullifierHash: proof.nullifier_hash,
+        verificationLevel: proof.verification_level,
+        isHumanVerified: true,
+        verifiedAt: new Date().toISOString(),
+        platform: "worldcoin",
+        username: `worldfan_${Date.now().toString().slice(-6)}`,
+        email: "",
+        image: "",
+        genres: [],
+        cities: [],
+        favoriteArtists: "",
+        ticketStruggles: "",
+        priceRange: "$50-150",
+        notifications: true,
+      }
+
+      return NextResponse.json({
+        success: true,
+        user: userData,
+        message: "World ID verified successfully",
+      })
+    } else {
+      console.error("Verification failed:", verifyResult)
+      return NextResponse.json({ error: verifyResult.detail || "Verification failed" }, { status: 400 })
+    }
   } catch (error) {
-    console.error("Verification check error:", error)
-    return NextResponse.json({ success: false, error: "Verification check failed" }, { status: 500 })
+    console.error("Verification error:", error)
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
