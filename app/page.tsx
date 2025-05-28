@@ -1,352 +1,127 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import Image from "next/image"
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Shield, AlertCircle, Zap, CheckCircle } from "lucide-react"
+import { useWorldApp } from "@/hooks/use-world-app"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { AlertCircle, ExternalLink, Bug } from "lucide-react"
+import { useState } from "react"
 
-declare global {
-  interface Window {
-    MiniKit: any
-  }
-}
+export default function Home() {
+  const { isWorldApp, isLoading, error } = useWorldApp()
+  const [showDebug, setShowDebug] = useState(false)
 
-export default function HomePage() {
-  const [user, setUser] = useState<any>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [isVerifying, setIsVerifying] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [debugInfo, setDebugInfo] = useState<any>(null)
-
-  useEffect(() => {
-    // Check for existing session
-    const savedUser = localStorage.getItem("worldfan_user")
-    if (savedUser) {
-      try {
-        setUser(JSON.parse(savedUser))
-      } catch (error) {
-        localStorage.removeItem("worldfan_user")
-      }
-    }
-
-    // Initialize MiniKit
-    const initMiniKit = () => {
-      if (typeof window !== "undefined" && window.MiniKit) {
-        try {
-          window.MiniKit.install({
-            appId: "app_7a9639a92f85fcf27213f982eddb5064",
-          })
-          console.log("MiniKit installed successfully")
-        } catch (error) {
-          console.error("MiniKit installation error:", error)
-        }
-      }
-    }
-
-    // Load MiniKit script if not already loaded
-    if (!window.MiniKit) {
-      const script = document.createElement("script")
-      script.src = "https://cdn.worldcoin.org/minikit/v1/minikit.js"
-      script.async = true
-      script.onload = initMiniKit
-      document.head.appendChild(script)
-    } else {
-      initMiniKit()
-    }
-
-    setIsLoading(false)
-  }, [])
-
-  const getDebugInfo = () => {
-    if (!window.MiniKit) return null
-
-    const commands = window.MiniKit.commands || {}
-    return {
-      isInstalled: window.MiniKit.isInstalled?.() || false,
-      hasWorldApp: navigator.userAgent.includes("WorldApp"),
-      inIframe: window.self !== window.top,
-      url: window.location.href,
-      userAgent: navigator.userAgent,
-      appId: "app_7a9639a92f85fcf27213f982eddb5064",
-      availableCommands: Object.keys(commands),
-      hasSignIn: typeof commands.signIn === "function",
-      hasVerify: typeof commands.verify === "function",
-    }
-  }
-
-  const handleSignIn = async () => {
-    setIsVerifying(true)
-    setError(null)
-
-    try {
-      const debug = getDebugInfo()
-      setDebugInfo(debug)
-      console.log("Debug Info:", debug)
-
-      if (!window.MiniKit || !window.MiniKit.isInstalled()) {
-        throw new Error("MiniKit is not installed. Please open this app in the World App.")
-      }
-
-      const commands = window.MiniKit.commands
-      if (!commands) {
-        throw new Error("MiniKit commands not available")
-      }
-
-      let result = null
-
-      // Try signIn first (preferred method)
-      if (typeof commands.signIn === "function") {
-        console.log("Using signIn command...")
-        result = await commands.signIn({
-          action: "signin",
-          signal: "worldfan_signin_" + Date.now(),
-        })
-      }
-      // Fallback to verify if signIn not available
-      else if (typeof commands.verify === "function") {
-        console.log("Using verify command as fallback...")
-        result = await commands.verify({
-          action: "signin",
-          signal: "worldfan_verify_" + Date.now(),
-          verification_level: "device",
-        })
-      } else {
-        throw new Error("Neither signIn nor verify commands are available")
-      }
-
-      console.log("Authentication result:", result)
-
-      if (result && (result.nullifier_hash || result.finalPayload?.nullifier_hash)) {
-        const nullifierHash = result.nullifier_hash || result.finalPayload?.nullifier_hash
-        const verificationLevel = result.verification_level || result.finalPayload?.verification_level || "device"
-
-        const userData = {
-          id: `worldid_${Date.now()}`,
-          name: "World ID User",
-          nullifier_hash: nullifierHash,
-          verification_level: verificationLevel,
-          verified_at: new Date().toISOString(),
-          method: typeof commands.signIn === "function" ? "signIn" : "verify",
-        }
-
-        setUser(userData)
-        localStorage.setItem("worldfan_user", JSON.stringify(userData))
-      } else {
-        throw new Error("Authentication failed: No nullifier hash returned")
-      }
-    } catch (err: any) {
-      console.error("Authentication error:", err)
-      setError(err.message || "Authentication failed. Please try again.")
-    } finally {
-      setIsVerifying(false)
-    }
-  }
-
-  const handleDeveloperMode = () => {
-    const devUser = {
-      id: `dev_${Date.now()}`,
-      name: "Developer User",
-      nullifier_hash: `dev_${Date.now()}`,
-      verification_level: "device",
-      verified_at: new Date().toISOString(),
-      method: "developer",
-    }
-    setUser(devUser)
-    localStorage.setItem("worldfan_user", JSON.stringify(devUser))
-  }
-
-  const handleSignOut = () => {
-    setUser(null)
-    localStorage.removeItem("worldfan_user")
-  }
-
-  // Show loading state
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 to-blue-50">
-        <div className="text-center">
-          <div className="w-8 h-8 border-4 border-purple-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading World Fan...</p>
-        </div>
-      </div>
-    )
-  }
-
-  // Show dashboard if authenticated
-  if (user) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 p-4">
-        <div className="max-w-2xl mx-auto">
-          <Card className="shadow-xl">
-            <CardHeader className="text-center">
-              <div className="w-16 h-16 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                <CheckCircle className="w-8 h-8 text-white" />
-              </div>
-              <CardTitle className="text-2xl">Welcome to World Fan!</CardTitle>
-              <p className="text-gray-600">You are successfully signed in with World ID</p>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="bg-gray-50 rounded-lg p-4">
-                <h3 className="font-medium mb-3">Your World ID Details</h3>
-                <div className="space-y-2 text-sm">
-                  <p>
-                    <strong>User:</strong> {user.name}
-                  </p>
-                  <p>
-                    <strong>Nullifier:</strong>{" "}
-                    <code className="bg-gray-200 px-1 rounded text-xs">{user.nullifier_hash}</code>
-                  </p>
-                  <p>
-                    <strong>Verification Level:</strong> {user.verification_level}
-                  </p>
-                  <p>
-                    <strong>Method Used:</strong> {user.method}
-                  </p>
-                  <p>
-                    <strong>Verified At:</strong> {new Date(user.verified_at).toLocaleString()}
-                  </p>
-                </div>
-              </div>
-
-              <div className="grid gap-4">
-                <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                  <h4 className="font-medium text-green-900 mb-2">🎵 Music Features Available</h4>
-                  <ul className="text-sm text-green-700 space-y-1">
-                    <li>• Fair-priced concert tickets</li>
-                    <li>• Exclusive vinyl releases</li>
-                    <li>• Direct artist connections</li>
-                    <li>• Anti-bot protection</li>
-                  </ul>
-                </div>
-              </div>
-
-              <Button onClick={handleSignOut} variant="outline" className="w-full">
-                Sign Out
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    )
-  }
-
-  // Show sign-in page
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 p-4">
-      <div className="max-w-md mx-auto">
-        <Card className="shadow-xl">
-          <CardHeader className="text-center">
-            <div className="w-16 h-16 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Shield className="w-8 h-8 text-white" />
-            </div>
-            <CardTitle className="text-2xl">World Fan</CardTitle>
-            <p className="text-gray-600">Sign in with World ID to access exclusive music experiences</p>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="space-y-3">
-              <div className="flex items-center gap-3 p-3 bg-green-50 rounded-lg">
-                <Shield className="w-5 h-5 text-green-600" />
-                <div>
-                  <p className="font-medium text-green-900">Human Verified</p>
-                  <p className="text-sm text-green-700">Proof you're a real person, not a bot</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg">
-                <CheckCircle className="w-5 h-5 text-blue-600" />
-                <div>
-                  <p className="font-medium text-blue-900">Fair Access</p>
-                  <p className="text-sm text-blue-700">No scalpers, fair prices for real fans</p>
-                </div>
-              </div>
-            </div>
+    <div className="flex min-h-screen flex-col">
+      <header className="border-b">
+        <div className="container flex h-16 items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Image
+              src="/placeholder.svg?height=32&width=32&query=world%20logo"
+              alt="World Logo"
+              width={32}
+              height={32}
+            />
+            <span className="text-xl font-bold">World Music</span>
+          </div>
+        </div>
+      </header>
 
-            <Button
-              onClick={handleSignIn}
-              disabled={isVerifying}
-              className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
-              size="lg"
+      {!isLoading && !isWorldApp && (
+        <Alert className="mx-4 mt-4 bg-yellow-50 border-yellow-200">
+          <AlertCircle className="h-5 w-5 text-yellow-600" />
+          <AlertDescription className="text-yellow-800 ml-2">
+            For the best experience, please open this app in the World App.
+            <a
+              href="https://worldcoin.org/download"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1 underline mt-1"
             >
-              {isVerifying ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                  Signing in with World ID...
-                </>
-              ) : (
-                <>
-                  <Shield className="w-4 h-4 mr-2" />
-                  Sign in with World ID
-                </>
-              )}
-            </Button>
+              Download World App <ExternalLink className="h-3 w-3" />
+            </a>
+          </AlertDescription>
+        </Alert>
+      )}
 
-            {error && (
-              <div className="space-y-3">
-                <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
-                  <AlertCircle className="w-4 h-4 text-red-600 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <p className="text-sm font-medium text-red-900">Sign In Error</p>
-                    <p className="text-sm text-red-700">{error}</p>
-                  </div>
-                </div>
-
-                <div className="flex gap-2">
-                  <Button onClick={handleSignIn} variant="outline" size="sm" className="flex-1">
-                    Try Again
-                  </Button>
-                  <Button onClick={handleDeveloperMode} variant="outline" size="sm" className="flex-1">
-                    Developer Mode
-                  </Button>
-                </div>
-              </div>
-            )}
-
-            {debugInfo && (
-              <details className="text-xs bg-gray-50 p-3 rounded border">
-                <summary className="cursor-pointer font-medium text-gray-700 mb-2">
-                  Debug Information (Click to expand)
-                </summary>
-                <div className="space-y-1 text-gray-600">
-                  <p>
-                    <strong>Environment:</strong>
-                  </p>
-                  <p>MiniKit Installed: {debugInfo.isInstalled ? "✓" : "✗"}</p>
-                  <p>Has WorldApp: {debugInfo.hasWorldApp ? "✓" : "✗"}</p>
-                  <p>In iframe: {debugInfo.inIframe ? "✓" : "✗"}</p>
-                  <p>URL: {debugInfo.url}</p>
-                  <p>User Agent: {debugInfo.userAgent.slice(0, 50)}...</p>
-                  <p>App ID: {debugInfo.appId}</p>
-                  <p>
-                    <strong>MiniKit Commands:</strong>
-                  </p>
-                  <p>Available Commands: {debugInfo.availableCommands.join(", ")}</p>
-                  <p>Has signIn: {debugInfo.hasSignIn ? "✓" : "✗"}</p>
-                  <p>Has verify: {debugInfo.hasVerify ? "✓" : "✗"}</p>
-                </div>
-              </details>
-            )}
-
-            <div className="text-center">
-              <Button onClick={handleDeveloperMode} variant="ghost" size="sm" className="text-xs">
-                <Zap className="w-3 h-3 mr-1" />
-                Continue with Development Mode (Testing)
+      <main className="flex-1">
+        <section className="container py-12 md:py-24 lg:py-32">
+          <div className="mx-auto flex max-w-[980px] flex-col items-center gap-4 text-center">
+            <h1 className="text-3xl font-bold leading-tight tracking-tighter md:text-5xl lg:text-6xl lg:leading-[1.1]">
+              Discover music with verified humans
+            </h1>
+            <p className="max-w-[750px] text-lg text-muted-foreground sm:text-xl">
+              Join our community of Orb-verified music lovers. Share your preferences, discover new artists, and connect
+              with others.
+            </p>
+            <div className="flex flex-col gap-4 sm:flex-row">
+              <Button asChild size="lg">
+                <Link href="/signup">Get Started</Link>
+              </Button>
+              <Button variant="outline" size="lg" asChild>
+                <a href="https://worldcoin.org/download" target="_blank" rel="noopener noreferrer">
+                  Download World App
+                </a>
               </Button>
             </div>
-
-            <div className="text-xs text-gray-500 text-center">
-              <p>
-                By signing in with World ID, you agree to our{" "}
-                <a href="#" className="text-purple-600 hover:underline">
-                  Terms of Service
-                </a>{" "}
-                and{" "}
-                <a href="#" className="text-purple-600 hover:underline">
-                  Privacy Policy
-                </a>
-              </p>
+          </div>
+        </section>
+        <section className="container py-12 md:py-24 lg:py-32">
+          <div className="mx-auto grid max-w-5xl items-center gap-6 py-12 lg:grid-cols-2 lg:gap-12">
+            <div className="flex flex-col justify-center space-y-4">
+              <div className="space-y-2">
+                <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">Orb Verified</h2>
+                <p className="max-w-[600px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
+                  Our platform uses World ID to ensure every user is a unique human, creating a trusted community for
+                  music lovers.
+                </p>
+              </div>
             </div>
-          </CardContent>
-        </Card>
-      </div>
+            <div className="flex justify-center">
+              <Image
+                src="/placeholder.svg?height=400&width=400&query=orb%20verification%20device"
+                alt="Orb Verification"
+                width={400}
+                height={400}
+                className="rounded-lg object-cover"
+              />
+            </div>
+          </div>
+        </section>
+      </main>
+      <footer className="border-t py-6 md:py-0">
+        <div className="container flex flex-col items-center justify-between gap-4 md:h-16 md:flex-row">
+          <p className="text-sm text-muted-foreground">
+            &copy; {new Date().getFullYear()} World Music. All rights reserved.
+          </p>
+          <div className="flex gap-4">
+            <Link href="#" className="text-sm text-muted-foreground underline-offset-4 hover:underline">
+              Terms
+            </Link>
+            <Link href="#" className="text-sm text-muted-foreground underline-offset-4 hover:underline">
+              Privacy
+            </Link>
+            <button
+              onClick={() => setShowDebug(!showDebug)}
+              className="text-sm text-muted-foreground underline-offset-4 hover:underline flex items-center gap-1"
+            >
+              <Bug className="h-3 w-3" />
+              {showDebug ? "Hide Debug" : "Debug"}
+            </button>
+          </div>
+        </div>
+
+        {/* Debug information - only shown when debug mode is enabled */}
+        {showDebug && error && (
+          <div className="container mt-4 p-4 border border-gray-200 rounded-md bg-gray-50">
+            <h3 className="text-sm font-medium flex items-center gap-1">
+              <Bug className="h-4 w-4" /> Debug Information
+            </h3>
+            <p className="text-xs text-red-600 mt-1">{error}</p>
+          </div>
+        )}
+      </footer>
     </div>
   )
 }

@@ -2,23 +2,29 @@ import type React from "react"
 import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
+import { ThemeProvider } from "@/components/theme-provider"
+import { MiniKitProvider } from "@/components/minikit-provider"
 
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "World Fan",
-  description: "Music experiences on Worldcoin",
+  title: "World Music App",
+  description: "A music preference app for Orb-verified users",
     generator: 'v0.dev'
 }
 
 export default function RootLayout({
   children,
-}: {
+}: Readonly<{
   children: React.ReactNode
-}) {
+}>) {
   return (
-    <html lang="en">
-      <body className={inter.className}>{children}</body>
+    <html lang="en" suppressHydrationWarning>
+      <body className={inter.className}>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+          <MiniKitProvider>{children}</MiniKitProvider>
+        </ThemeProvider>
+      </body>
     </html>
   )
 }
