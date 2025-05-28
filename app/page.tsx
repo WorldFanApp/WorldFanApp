@@ -3,81 +3,24 @@
 import { useState } from "react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { useMiniKit } from "@/components/minikit-provider"
+import { useSession } from "next-auth/react"
 import { Bug } from "lucide-react"
-import { verifyWorldId } from "@/app/actions/verify-world-id"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { CheckCircle, AlertCircle } from "lucide-react"
-
-// World ID App ID provided by the user
-const WORLD_ID_APP_ID = "app_7a9639a92f85fcf27213f982eddb5064"
+import { AuthButton } from "@/components/auth-button"
+import { DebugAuth } from "@/components/debug-auth"
 
 export default function Home() {
-  const { isWorldApp, isLoading, error: miniKitError } = useMiniKit()
   const [showDebug, setShowDebug] = useState(false)
-  const [isVerifying, setIsVerifying] = useState(false)
-  const [verificationError, setVerificationError] = useState<string | null>(null)
-  const [isVerified, setIsVerified] = useState(false)
+  const { data: session, status } = useSession()
   const router = useRouter()
 
-  const handleGetStarted = async () => {
-    // If already verified, go to signup
-    if (isVerified) {
+  // If user is authenticated, redirect to signup or dashboard
+  if (status === "authenticated") {
+    // Check if user has completed signup
+    const userData = localStorage.getItem("userData")
+    if (userData) {
+      router.push("/dashboard")
+    } else {
       router.push("/signup")
-      return
-    }
-
-    setIsVerifying(true)
-    setVerificationError(null)
-
-    try {
-      // Access the global MiniKit object
-      const MiniKit = (window as any).MiniKit
-
-      if (!MiniKit) {
-        throw new Error("MiniKit is not available. Please ensure you're using the World App.")
-      }
-
-      console.log("Calling MiniKit.verify with app_id:", WORLD_ID_APP_ID)
-
-      // Call the verify method
-      const result = await MiniKit.verify({
-        app_id: WORLD_ID_APP_ID,
-        action: "world-music-signin",
-        verification_level: "orb",
-      })
-
-      console.log("Verification result:", result)
-
-      if (result.success) {
-        // Send the proof to your backend for verification
-        const verificationResult = await verifyWorldId({
-          proof: result.proof,
-          merkle_root: result.merkle_root,
-          nullifier_hash: result.nullifier_hash,
-          verification_level: result.verification_level,
-        })
-
-        if (verificationResult.success) {
-          setIsVerified(true)
-          // Store verification status
-          localStorage.setItem("worldIdVerified", "true")
-          // Redirect to signup
-          router.push("/signup")
-        } else {
-          setVerificationError("Server verification failed. Please try again.")
-        }
-      } else {
-        throw new Error(result.error || "Verification failed")
-      }
-    } catch (err) {
-      console.error("Verification error:", err)
-      setVerificationError(
-        err instanceof Error ? err.message : "An error occurred during verification. Please try again.",
-      )
-    } finally {
-      setIsVerifying(false)
     }
   }
 
@@ -108,32 +51,16 @@ export default function Home() {
               with others.
             </p>
 
-            {verificationError && (
-              <Alert className="max-w-md bg-red-50 border-red-200">
-                <AlertCircle className="h-5 w-5 text-red-600" />
-                <AlertDescription className="text-red-800 ml-2">{verificationError}</AlertDescription>
-              </Alert>
-            )}
-
-            {isVerified && (
-              <Alert className="max-w-md bg-green-50 border-green-200">
-                <CheckCircle className="h-5 w-5 text-green-600" />
-                <AlertDescription className="text-green-800 ml-2">
-                  Successfully verified with World ID! Redirecting...
-                </AlertDescription>
-              </Alert>
-            )}
-
             <div className="flex flex-col gap-4 sm:flex-row">
-              <Button size="lg" onClick={handleGetStarted} disabled={isVerifying || isLoading}>
-                {isVerifying ? "Verifying..." : "Get Started with World ID"}
-              </Button>
+              <AuthButton callbackUrl="/signup" className="px-8" />
             </div>
 
             <p className="text-sm text-muted-foreground max-w-md">
-              By clicking "Get Started", you'll be asked to verify your identity with World ID to ensure you're a unique
-              human.
+              By clicking "Sign In with World ID", you'll be asked to verify your identity with World ID to ensure
+              you're a unique human.
             </p>
+
+            <DebugAuth />
           </div>
         </section>
         <section className="container py-12 md:py-24 lg:py-32">
@@ -187,12 +114,19 @@ export default function Home() {
             <h3 className="text-sm font-medium flex items-center gap-1">
               <Bug className="h-4 w-4" /> Debug Information
             </h3>
-            <p className="text-xs mt-1">World App: {isWorldApp ? "Yes" : "No"}</p>
+            <p className="text-xs mt-1">Session Status: {status}</p>
             <p className="text-xs">Environment: {process.env.NODE_ENV}</p>
             <p className="text-xs">
-              MiniKit Available: {typeof (window as any).MiniKit !== "undefined" ? "Yes" : "No"}
+              World ID Client: {process.env.WORLDCOIN_CLIENT_ID ? "Configured" : "app_7a9639a92f85fcf27213f982eddb5064"}
             </p>
-            {miniKitError && <p className="text-xs text-red-600 mt-1">MiniKit Error: {miniKitError}</p>}
+            {session && (
+              <div className="mt-2">
+                <p className="text-xs font-medium">Session Data:</p>
+                <pre className="text-xs mt-1 bg-gray-100 p-2 rounded overflow-auto max-h-40">
+                  {JSON.stringify(session, null, 2)}
+                </pre>
+              </div>
+            )}
           </div>
         )}
       </footer>

@@ -4,15 +4,16 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
 import Link from "next/link"
+import { useSession } from "next-auth/react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { LocationForm } from "@/components/location-form"
 import { MusicPreferencesForm } from "@/components/music-preferences-form"
 import { NotificationPreferencesForm } from "@/components/notification-preferences-form"
 import { Progress } from "@/components/ui/progress"
-import { useMiniKit } from "@/components/minikit-provider"
-import { Bug, CheckCircle } from "lucide-react"
+import { CheckCircle } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { DebugAuth } from "@/components/debug-auth"
 
 const steps = [
   { id: "location", title: "Location" },
@@ -23,7 +24,6 @@ const steps = [
 export default function SignupPage() {
   const [currentStep, setCurrentStep] = useState(0)
   const [userData, setUserData] = useState({
-    isOrbVerified: false,
     country: "",
     city: "",
     artists: [],
@@ -33,20 +33,15 @@ export default function SignupPage() {
     phone: "",
     username: "",
   })
-  const [showDebug, setShowDebug] = useState(false)
   const router = useRouter()
-  const { isWorldApp, isLoading, error } = useMiniKit()
+  const { data: session, status } = useSession()
 
   useEffect(() => {
-    // Check if user is already verified
-    const isVerified = localStorage.getItem("worldIdVerified") === "true"
-    if (!isVerified) {
-      // Redirect to home if not verified
+    // If not authenticated, redirect to home
+    if (status === "unauthenticated") {
       router.push("/")
-    } else {
-      setUserData((prev) => ({ ...prev, isOrbVerified: true }))
     }
-  }, [router])
+  }, [status, router])
 
   const progress = ((currentStep + 1) / steps.length) * 100
 
@@ -56,7 +51,14 @@ export default function SignupPage() {
       window.scrollTo(0, 0)
     } else {
       // Save data and redirect to dashboard
-      localStorage.setItem("userData", JSON.stringify(userData))
+      const userDataWithSession = {
+        ...userData,
+        worldId: session?.user?.id || "",
+        email: session?.user?.email || userData.email,
+        name: session?.user?.name || userData.username,
+        worldcoin_credential_type: session?.user?.worldcoin_credential_type || "",
+      }
+      localStorage.setItem("userData", JSON.stringify(userDataWithSession))
       router.push("/dashboard")
     }
   }
@@ -72,13 +74,18 @@ export default function SignupPage() {
     setUserData({ ...userData, ...data })
   }
 
-  // Show loading state while checking World App status
-  if (isLoading) {
+  // Show loading state while checking authentication status
+  if (status === "loading") {
     return (
       <div className="container max-w-4xl py-10 flex items-center justify-center min-h-[50vh]">
         <p>Loading...</p>
       </div>
     )
+  }
+
+  // If not authenticated, don't render the form
+  if (status === "unauthenticated") {
+    return null
   }
 
   return (
@@ -95,11 +102,16 @@ export default function SignupPage() {
         <p className="text-muted-foreground">Complete the steps below to create your account</p>
       </div>
 
-      {userData.isOrbVerified && (
+      {session && (
         <Alert className="mb-6 bg-green-50 border-green-200">
           <CheckCircle className="h-5 w-5 text-green-600" />
-          <AlertDescription className="text-green-800 ml-2">
-            Your identity has been verified with World ID
+          <AlertDescription className="text-green-800 ml-2 flex items-center justify-between w-full">
+            <span>Signed in as {session.user?.name || session.user?.email || "Verified User"}</span>
+            {session.user?.worldcoin_credential_type && (
+              <span className="bg-green-100 text-green-800 px-2 py-0.5 rounded-full text-xs font-medium">
+                {session.user.worldcoin_credential_type}
+              </span>
+            )}
           </AlertDescription>
         </Alert>
       )}
@@ -148,25 +160,8 @@ export default function SignupPage() {
         </CardFooter>
       </Card>
 
-      {/* Debug button at the bottom */}
-      <div className="mt-8 text-center">
-        <button
-          onClick={() => setShowDebug(!showDebug)}
-          className="text-xs text-muted-foreground underline-offset-4 hover:underline flex items-center gap-1 mx-auto"
-        >
-          <Bug className="h-3 w-3" />
-          {showDebug ? "Hide Debug Info" : "Show Debug Info"}
-        </button>
-
-        {showDebug && (
-          <div className="mt-2 p-2 border border-gray-200 rounded-md bg-gray-50 text-xs text-left">
-            <p>World App: {isWorldApp ? "Yes" : "No"}</p>
-            <p>Environment: {process.env.NODE_ENV}</p>
-            <p>MiniKit Available: {typeof (window as any).MiniKit !== "undefined" ? "Yes" : "No"}</p>
-            <p>Verified: {userData.isOrbVerified ? "Yes" : "No"}</p>
-            {error && <p className="text-red-600">Error: {error}</p>}
-          </div>
-        )}
+      <div className="mt-8 flex justify-center">
+        <DebugAuth />
       </div>
     </div>
   )

@@ -4,12 +4,14 @@ import type React from "react"
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
+import { useSession } from "next-auth/react"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Switch } from "@/components/ui/switch"
 import { Separator } from "@/components/ui/separator"
+import { Badge } from "@/components/ui/badge"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,6 +26,7 @@ import {
 
 export default function AccountPage() {
   const router = useRouter()
+  const { data: session } = useSession()
   const [userData, setUserData] = useState<any>(null)
   const [formData, setFormData] = useState({
     username: "",
@@ -83,6 +86,18 @@ export default function AccountPage() {
 
   if (!userData) {
     return <div>No user data found</div>
+  }
+
+  // Get credential type badge color
+  const getCredentialBadgeColor = (type?: string) => {
+    switch (type) {
+      case "orb":
+        return "bg-green-100 text-green-800 border-green-200"
+      case "phone":
+        return "bg-blue-100 text-blue-800 border-blue-200"
+      default:
+        return "bg-gray-100 text-gray-800 border-gray-200"
+    }
   }
 
   return (
@@ -201,11 +216,38 @@ export default function AccountPage() {
                 <polyline points="22 4 12 14.01 9 11.01"></polyline>
               </svg>
             </div>
-            <div>
-              <h3 className="font-medium">Orb Verified</h3>
+            <div className="flex-1">
+              <div className="flex items-center justify-between">
+                <h3 className="font-medium">World ID Verified</h3>
+                {session?.user?.worldcoin_credential_type && (
+                  <Badge className={getCredentialBadgeColor(session.user.worldcoin_credential_type)}>
+                    {session.user.worldcoin_credential_type === "orb"
+                      ? "Orb Verified"
+                      : session.user.worldcoin_credential_type}
+                  </Badge>
+                )}
+              </div>
               <p className="text-sm text-muted-foreground">Your identity has been verified with World ID</p>
             </div>
           </div>
+
+          {session && (
+            <div className="mt-4 p-4 border rounded-md bg-gray-50">
+              <h4 className="text-sm font-medium mb-2">Verification Details</h4>
+              <div className="space-y-1 text-sm">
+                <p>
+                  <span className="font-medium">User ID:</span> {session.user?.id || "Not available"}
+                </p>
+                <p>
+                  <span className="font-medium">Name:</span> {session.user?.name || "Not available"}
+                </p>
+                <p>
+                  <span className="font-medium">Credential Type:</span>{" "}
+                  {session.user?.worldcoin_credential_type || "Not available"}
+                </p>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
