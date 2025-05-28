@@ -22,7 +22,7 @@ export function AuthButton({ callbackUrl = "/signup", className }: AuthButtonPro
     }
 
     const verifyPayload: VerifyCommandInput = {
-      action: 'your-action-id', // Placeholder
+      action: 'WorldFanSignup', // Placeholder
       signal: 'user-specific-signal', // Placeholder
       verification_level: VerificationLevel.Orb,
     };
