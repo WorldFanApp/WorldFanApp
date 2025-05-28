@@ -1,10 +1,9 @@
 "use client"
 
-import { useState } from "react"
 import { signIn, signOut, useSession } from "next-auth/react"
 import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { AlertCircle, CheckCircle, Loader2 } from "lucide-react"
+import { CheckCircle, Loader2 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 
 interface AuthButtonProps {
@@ -14,39 +13,13 @@ interface AuthButtonProps {
 
 export function AuthButton({ callbackUrl = "/signup", className }: AuthButtonProps) {
   const { data: session, status } = useSession()
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
 
-  const handleSignIn = async () => {
-    setIsLoading(true)
-    setError(null)
-
-    try {
-      // Use redirect: false to handle errors manually
-      const result = await signIn("worldcoin", { callbackUrl, redirect: false })
-
-      if (result?.error) {
-        setError(`Authentication error: ${result.error}`)
-      } else if (result?.url) {
-        // Manually redirect to avoid client-side navigation issues
-        window.location.href = result.url
-      }
-    } catch (err) {
-      console.error("Sign in error:", err)
-      setError("An error occurred during sign in. Please try again.")
-    } finally {
-      setIsLoading(false)
-    }
+  const handleSignIn = () => {
+    signIn("worldcoin", { callbackUrl })
   }
 
-  const handleSignOut = async () => {
-    setIsLoading(true)
-    try {
-      await signOut({ callbackUrl: "/" })
-    } catch (err) {
-      console.error("Sign out error:", err)
-      setIsLoading(false)
-    }
+  const handleSignOut = () => {
+    signOut({ callbackUrl: "/" })
   }
 
   // Get credential type badge color
@@ -76,16 +49,17 @@ export function AuthButton({ callbackUrl = "/signup", className }: AuthButtonPro
         <Alert className="bg-green-50 border-green-200">
           <CheckCircle className="h-5 w-5 text-green-600" />
           <AlertDescription className="text-green-800 ml-2 flex items-center justify-between w-full">
-            <span>Signed in as {session.user?.name || session.user?.email || "Verified User"}</span>
+            <span>Verified as {session.user?.name || "World ID User"}</span>
             {session.user?.worldcoin_credential_type && (
               <Badge className={getCredentialBadgeColor(session.user.worldcoin_credential_type)}>
-                {session.user.worldcoin_credential_type}
+                {session.user.worldcoin_credential_type === "orb"
+                  ? "Orb Verified"
+                  : session.user.worldcoin_credential_type}
               </Badge>
             )}
           </AlertDescription>
         </Alert>
-        <Button onClick={handleSignOut} disabled={isLoading} className={className}>
-          {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+        <Button onClick={handleSignOut} className={className}>
           Sign Out
         </Button>
       </div>
@@ -93,17 +67,8 @@ export function AuthButton({ callbackUrl = "/signup", className }: AuthButtonPro
   }
 
   return (
-    <div className="space-y-4">
-      {error && (
-        <Alert className="bg-red-50 border-red-200">
-          <AlertCircle className="h-5 w-5 text-red-600" />
-          <AlertDescription className="text-red-800 ml-2">{error}</AlertDescription>
-        </Alert>
-      )}
-      <Button onClick={handleSignIn} disabled={isLoading} className={className}>
-        {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-        Sign In with World ID
-      </Button>
-    </div>
+    <Button onClick={handleSignIn} className={className} size="lg">
+      Sign In with World ID
+    </Button>
   )
 }

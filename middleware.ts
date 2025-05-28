@@ -2,15 +2,10 @@ import { NextResponse } from "next/server"
 import { getToken } from "next-auth/jwt"
 import type { NextRequest } from "next/server"
 
-// This function can be marked `async` if using `await` inside
 export async function middleware(req: NextRequest) {
-  const token = await getToken({ req })
-  const isAuthenticated = !!token
-
-  // Get the pathname of the request
   const path = req.nextUrl.pathname
 
-  // Allow access to public pages
+  // Allow access to authentication-related pages and API routes
   const publicPaths = ["/", "/api/auth", "/auth-error"]
   const isPublicPath = publicPaths.some((publicPath) => path.startsWith(publicPath))
 
@@ -23,9 +18,16 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next()
   }
 
-  // Check if the user is authenticated
+  // Check if the user is authenticated with World ID
+  const token = await getToken({
+    req,
+    secret: process.env.NEXTAUTH_SECRET,
+  })
+
+  const isAuthenticated = !!token
+
+  // If not authenticated, redirect to the sign-in page
   if (!isAuthenticated) {
-    // Redirect to the sign-in page
     const signInUrl = new URL("/", req.url)
     signInUrl.searchParams.set("callbackUrl", path)
     return NextResponse.redirect(signInUrl)

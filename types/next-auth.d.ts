@@ -24,10 +24,6 @@ declare module "next-auth/jwt" {
     /** Access Token */
     accessToken?: string
     /** User profile from OIDC provider */
-    profile?: {
-      sub: string
-      worldcoin_credential_type?: string
-      [key: string]: any
-    }
+    worldcoin_credential_type?: string
   }
 }

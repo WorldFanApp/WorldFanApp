@@ -57,10 +57,6 @@ export function DebugAuth() {
           <div className="bg-muted p-2 rounded overflow-auto">
             <p>NODE_ENV: {process.env.NODE_ENV}</p>
             <p>
-              WORLDCOIN_ISSUER:{" "}
-              {process.env.WORLDCOIN_ISSUER ? process.env.WORLDCOIN_ISSUER : "https://id.worldcoin.org"}
-            </p>
-            <p>
               WORLDCOIN_CLIENT_ID:{" "}
               {process.env.WORLDCOIN_CLIENT_ID
                 ? "***" + process.env.WORLDCOIN_CLIENT_ID.slice(-6)
@@ -77,9 +73,6 @@ export function DebugAuth() {
                 {
                   user: session.user,
                   expires: session.expires,
-                  // Don't show the full tokens for security
-                  accessToken: session.accessToken ? "***" + session.accessToken.slice(-6) : undefined,
-                  idToken: session.idToken ? "***" + session.idToken.slice(-6) : undefined,
                 },
                 null,
                 2,
@@ -105,25 +98,6 @@ export function DebugAuth() {
           {copied && <p className="text-xs text-green-600 mt-1">Copied to clipboard!</p>}
           <p className="text-xs text-muted-foreground mt-2">
             Make sure this URL is added to your World ID application&apos;s allowed callback URLs.
-          </p>
-        </div>
-
-        <div className="pt-2">
-          <p className="font-semibold mb-1">Production Callback URL:</p>
-          <div className="flex items-center gap-2 bg-muted p-2 rounded">
-            <code className="flex-1 break-all">https://worldmusicfan.vercel.app/api/auth/callback/worldcoin</code>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-6 w-6 p-0 rounded-full"
-              onClick={() => copyToClipboard("https://worldmusicfan.vercel.app/api/auth/callback/worldcoin")}
-            >
-              <Copy className="h-3 w-3" />
-              <span className="sr-only">Copy</span>
-            </Button>
-          </div>
-          <p className="text-xs text-muted-foreground mt-2">
-            For production deployment, add this URL to your World ID application.
           </p>
         </div>
       </CardContent>

@@ -6,67 +6,41 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { AlertCircle, ArrowLeft, Bug } from "lucide-react"
+import { AlertCircle, ArrowLeft, ExternalLink } from "lucide-react"
 
 export default function AuthErrorPage() {
   const searchParams = useSearchParams()
   const [error, setError] = useState<string | null>(null)
   const [errorDescription, setErrorDescription] = useState<string | null>(null)
-  const [showDebug, setShowDebug] = useState(false)
 
   useEffect(() => {
     const errorParam = searchParams.get("error")
     if (errorParam) {
       setError(errorParam)
 
-      // Set a more user-friendly error description based on the error code
+      // Set World ID specific error descriptions
       switch (errorParam) {
         case "Configuration":
-          setErrorDescription("There is a problem with the server configuration. Please contact support.")
+          setErrorDescription(
+            "There is a configuration issue with World ID. Please ensure your World ID app is properly configured.",
+          )
           break
         case "AccessDenied":
-          setErrorDescription("You do not have permission to sign in.")
-          break
-        case "Verification":
-          setErrorDescription("The verification process failed. Please try again.")
+          setErrorDescription("Access was denied. Please ensure you have completed Orb verification in the World App.")
           break
         case "OAuthSignin":
-          setErrorDescription("Error in the OAuth sign-in process. Please try again.")
-          break
         case "OAuthCallback":
-          setErrorDescription("Error in the OAuth callback process. Please try again.")
-          break
-        case "OAuthCreateAccount":
-          setErrorDescription("Could not create an OAuth account. Please try again.")
-          break
-        case "EmailCreateAccount":
-          setErrorDescription("Could not create an email account. Please try again.")
-          break
-        case "Callback":
-          setErrorDescription("The callback process failed. Please try again.")
-          break
-        case "OAuthAccountNotLinked":
-          setErrorDescription("This account is already linked to another profile.")
-          break
-        case "EmailSignin":
-          setErrorDescription("The email sign-in process failed. Please try again.")
-          break
-        case "CredentialsSignin":
-          setErrorDescription("The credentials you provided were invalid. Please try again.")
-          break
-        case "SessionRequired":
-          setErrorDescription("You must be signed in to access this page.")
-          break
-        case "Default":
-          setErrorDescription("An error occurred during authentication. Please try again.")
+          setErrorDescription(
+            "There was an error connecting to World ID. Please ensure your World App is up to date and try again.",
+          )
           break
         case "CLIENT_FETCH_ERROR":
           setErrorDescription(
-            "There was a problem connecting to the authentication server. This might be due to network issues or incorrect configuration.",
+            "Unable to connect to World ID servers. This may be due to network issues or World ID service availability. Please try again later.",
           )
           break
         default:
-          setErrorDescription("An unknown error occurred. Please try again.")
+          setErrorDescription("An error occurred during World ID authentication. Please try again.")
       }
     }
   }, [searchParams])
@@ -75,57 +49,40 @@ export default function AuthErrorPage() {
     <div className="container flex items-center justify-center min-h-screen py-10">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle>Authentication Error</CardTitle>
-          <CardDescription>There was a problem signing you in</CardDescription>
+          <CardTitle>World ID Authentication Error</CardTitle>
+          <CardDescription>There was a problem verifying your World ID</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
-            <AlertTitle>{error || "Error"}</AlertTitle>
+            <AlertTitle>{error || "Authentication Error"}</AlertTitle>
             <AlertDescription>
-              {errorDescription || "An error occurred during authentication. Please try again."}
+              {errorDescription || "An error occurred during World ID authentication. Please try again."}
             </AlertDescription>
           </Alert>
 
-          <div className="mt-4 text-sm text-muted-foreground">
-            <p>If this problem persists, please contact support or try again later.</p>
+          <div className="space-y-3">
+            <h3 className="font-medium text-sm">Troubleshooting Steps:</h3>
+            <ol className="list-decimal list-inside space-y-2 text-sm text-muted-foreground">
+              <li>Ensure you have the World App installed on your device</li>
+              <li>Verify you have completed Orb verification</li>
+              <li>Check your internet connection</li>
+              <li>Try signing in again</li>
+            </ol>
           </div>
 
-          <Button
-            variant="ghost"
-            size="sm"
-            className="mt-4 text-xs flex items-center gap-1"
-            onClick={() => setShowDebug(!showDebug)}
-          >
-            <Bug className="h-3 w-3" />
-            {showDebug ? "Hide Debug Info" : "Show Debug Info"}
-          </Button>
-
-          {showDebug && (
-            <div className="mt-2 p-2 border rounded text-xs">
-              <p>
-                <strong>Error:</strong> {error}
-              </p>
-              <p>
-                <strong>Description:</strong> {errorDescription}
-              </p>
-              <p>
-                <strong>URL:</strong> {typeof window !== "undefined" ? window.location.href : ""}
-              </p>
-              <p>
-                <strong>Callback URL:</strong>{" "}
-                {typeof window !== "undefined"
-                  ? `${window.location.origin}/api/auth/callback/worldcoin`
-                  : "/api/auth/callback/worldcoin"}
-              </p>
-              <p>
-                <strong>Client ID:</strong> app_7a9639a92f85fcf27213f982eddb5064
-              </p>
-              <p>
-                <strong>Environment:</strong> {process.env.NODE_ENV}
-              </p>
-            </div>
-          )}
+          <div className="pt-2">
+            <Button asChild variant="outline" size="sm" className="w-full">
+              <a
+                href="https://worldcoin.org/download"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-1"
+              >
+                Download World App <ExternalLink className="h-3 w-3" />
+              </a>
+            </Button>
+          </div>
         </CardContent>
         <CardFooter className="flex justify-between">
           <Button variant="outline" asChild>

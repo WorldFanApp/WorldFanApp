@@ -13,7 +13,6 @@ import { NotificationPreferencesForm } from "@/components/notification-preferenc
 import { Progress } from "@/components/ui/progress"
 import { CheckCircle } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { DebugAuth } from "@/components/debug-auth"
 
 const steps = [
   { id: "location", title: "Location" },
@@ -159,10 +158,6 @@ export default function SignupPage() {
           </Button>
         </CardFooter>
       </Card>
-
-      <div className="mt-8 flex justify-center">
-        <DebugAuth />
-      </div>
     </div>
   )
 }
