@@ -11,23 +11,6 @@ import { verifyWorldId } from "@/app/actions/verify-world-id"
 // World ID App ID provided by the user
 const WORLD_ID_APP_ID = "app_7a9639a92f85fcf27213f982eddb5064"
 
-// Mock MiniKit for development/testing outside World App
-const mockVerification = async () => {
-  // Simulate verification delay
-  await new Promise((resolve) => setTimeout(resolve, 2000))
-
-  // Return a mock successful verification
-  return {
-    finalPayload: {
-      status: "success",
-      proof: "mock_proof",
-      merkle_root: "mock_merkle_root",
-      nullifier_hash: "mock_nullifier_hash",
-      verification_level: "orb",
-    },
-  }
-}
-
 interface OrbVerificationProps {
   onVerified: () => void
   isVerified: boolean
@@ -37,11 +20,11 @@ export function OrbVerification({ onVerified, isVerified }: OrbVerificationProps
   const [isVerifying, setIsVerifying] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showDebug, setShowDebug] = useState(false)
-  const { isAvailable, isInstalled, isInitialized, isInitializing } = useMiniKit()
+  const { isWorldApp, isInitialized, isLoading } = useMiniKit()
 
   const handleVerify = async () => {
-    if (isInitializing) {
-      setError("MiniKit is still initializing. Please wait a moment and try again.")
+    if (isLoading) {
+      setError("Still initializing. Please wait a moment and try again.")
       return
     }
 
@@ -49,55 +32,44 @@ export function OrbVerification({ onVerified, isVerified }: OrbVerificationProps
     setError(null)
 
     try {
-      let verificationResult
+      // Access the global MiniKit object
+      const MiniKit = (window as any).MiniKit
 
-      if (isAvailable && isInstalled) {
-        // We're in the World App, use real verification
-        console.log("Using real World ID verification with app ID:", WORLD_ID_APP_ID)
-
-        // Access MiniKit safely
-        // @ts-ignore - MiniKit might not be defined
-        const MiniKit = window.MiniKit
-
-        const { finalPayload } = await MiniKit.commandsAsync.verify({
-          app_id: WORLD_ID_APP_ID,
-          action: "world-music-signup",
-          verification_level: "orb",
-        })
-
-        if (finalPayload.status === "success") {
-          // Send the proof to your backend for verification
-          verificationResult = await verifyWorldId({
-            proof: finalPayload.proof,
-            merkle_root: finalPayload.merkle_root,
-            nullifier_hash: finalPayload.nullifier_hash,
-            verification_level: finalPayload.verification_level,
-          })
-        } else {
-          throw new Error(finalPayload.error_message || "Verification failed")
-        }
-      } else {
-        // We're not in the World App, use mock verification for development
-        console.log("Using mock verification (not in World App)")
-        const { finalPayload } = await mockVerification()
-
-        // Send the mock proof to your backend
-        verificationResult = await verifyWorldId({
-          proof: finalPayload.proof,
-          merkle_root: finalPayload.merkle_root,
-          nullifier_hash: finalPayload.nullifier_hash,
-          verification_level: finalPayload.verification_level,
-        })
+      if (!MiniKit) {
+        throw new Error("MiniKit is not available")
       }
 
-      if (verificationResult.success) {
-        onVerified()
+      console.log("Calling MiniKit.verify with app_id:", WORLD_ID_APP_ID)
+
+      // Call the verify method
+      const result = await MiniKit.verify({
+        app_id: WORLD_ID_APP_ID,
+        action: "world-music-signup",
+        verification_level: "orb",
+      })
+
+      console.log("Verification result:", result)
+
+      if (result.success) {
+        // Send the proof to your backend for verification
+        const verificationResult = await verifyWorldId({
+          proof: result.proof,
+          merkle_root: result.merkle_root,
+          nullifier_hash: result.nullifier_hash,
+          verification_level: result.verification_level,
+        })
+
+        if (verificationResult.success) {
+          onVerified()
+        } else {
+          setError("Server verification failed. Please try again.")
+        }
       } else {
-        setError("Server verification failed. Please try again.")
+        throw new Error(result.error || "Verification failed")
       }
     } catch (err) {
       console.error("Verification error:", err)
-      setError("An error occurred during verification. Please try again.")
+      setError(err instanceof Error ? err.message : "An error occurred during verification. Please try again.")
     } finally {
       setIsVerifying(false)
     }
@@ -114,13 +86,60 @@ export function OrbVerification({ onVerified, isVerified }: OrbVerificationProps
     )
   }
 
-  if (isInitializing) {
+  if (isLoading) {
     return (
       <div className="flex flex-col items-center space-y-6 py-4">
         <div className="text-center space-y-2">
-          <h3 className="text-lg font-medium">Initializing World ID...</h3>
+          <h3 className="text-lg font-medium">Initializing...</h3>
           <p className="text-muted-foreground">Please wait while we connect to World ID.</p>
         </div>
+      </div>
+    )
+  }
+
+  // In development mode, we'll allow verification even if not in World App
+  const allowVerification = isWorldApp || process.env.NODE_ENV === "development"
+
+  if (!allowVerification) {
+    return (
+      <div className="flex flex-col items-center space-y-6 py-4">
+        <Alert className="bg-yellow-50 border-yellow-200">
+          <AlertCircle className="h-5 w-5 text-yellow-600" />
+          <AlertDescription className="text-yellow-800 ml-2">
+            Orb verification requires the World App. Please open this application in the World App to continue.
+          </AlertDescription>
+        </Alert>
+
+        <p className="text-center text-muted-foreground">
+          Please download and open this application in the World App for the full experience.
+        </p>
+
+        <Button asChild variant="outline" className="flex items-center gap-2">
+          <a href="https://worldcoin.org/download" target="_blank" rel="noopener noreferrer">
+            Download World App <ExternalLink className="h-4 w-4" />
+          </a>
+        </Button>
+
+        <button
+          onClick={() => setShowDebug(!showDebug)}
+          className="text-xs text-muted-foreground underline-offset-4 hover:underline mt-4"
+        >
+          {showDebug ? "Hide Debug Info" : "Show Debug Info"}
+        </button>
+
+        {showDebug && (
+          <div className="w-full p-4 border border-gray-200 rounded-md bg-gray-50 text-xs">
+            <h4 className="font-medium">Debug Information:</h4>
+            <ul className="mt-2 space-y-1">
+              <li>App ID: {WORLD_ID_APP_ID}</li>
+              <li>World App: {isWorldApp ? "Yes" : "No"}</li>
+              <li>Initialized: {isInitialized ? "Yes" : "No"}</li>
+              <li>Environment: {process.env.NODE_ENV}</li>
+              <li>Error: {error || "None"}</li>
+              <li>MiniKit Available: {typeof (window as any).MiniKit !== "undefined" ? "Yes" : "No"}</li>
+            </ul>
+          </div>
+        )}
       </div>
     )
   }
@@ -141,29 +160,11 @@ export function OrbVerification({ onVerified, isVerified }: OrbVerificationProps
           To continue, you need to verify your identity using World ID. This ensures you're a unique human.
         </p>
 
-        {!isAvailable && !showDebug && (
-          <Alert className="mt-4 bg-yellow-50 border-yellow-200">
-            <AlertCircle className="h-5 w-5 text-yellow-600" />
-            <AlertDescription className="text-yellow-800 ml-2">
-              For the best experience, please open this app in the World App.
-              {process.env.NODE_ENV === "development" && " Using mock verification for development."}
-            </AlertDescription>
-          </Alert>
-        )}
-
-        {isAvailable && !isInstalled && !showDebug && (
-          <Alert className="mt-4 bg-yellow-50 border-yellow-200">
-            <AlertCircle className="h-5 w-5 text-yellow-600" />
-            <AlertDescription className="text-yellow-800 ml-2">
-              Please open this app in the World App for real verification.
-              <a
-                href="https://worldcoin.org/download"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-1 underline mt-1"
-              >
-                Download World App <ExternalLink className="h-3 w-3" />
-              </a>
+        {process.env.NODE_ENV === "development" && !isWorldApp && (
+          <Alert className="mt-4 bg-blue-50 border-blue-200">
+            <AlertCircle className="h-5 w-5 text-blue-600" />
+            <AlertDescription className="text-blue-800 ml-2">
+              Development mode: Using mock verification since you're not in the World App.
             </AlertDescription>
           </Alert>
         )}
@@ -204,10 +205,10 @@ export function OrbVerification({ onVerified, isVerified }: OrbVerificationProps
           <h4 className="font-medium">Debug Information:</h4>
           <ul className="mt-2 space-y-1">
             <li>App ID: {WORLD_ID_APP_ID}</li>
-            <li>MiniKit Available: {isAvailable ? "Yes" : "No"}</li>
-            <li>World App: {isInstalled ? "Yes" : "No"}</li>
+            <li>World App: {isWorldApp ? "Yes" : "No"}</li>
             <li>Initialized: {isInitialized ? "Yes" : "No"}</li>
             <li>Environment: {process.env.NODE_ENV}</li>
+            <li>MiniKit Available: {typeof (window as any).MiniKit !== "undefined" ? "Yes" : "No"}</li>
           </ul>
         </div>
       )}

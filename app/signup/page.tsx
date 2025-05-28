@@ -11,8 +11,7 @@ import { LocationForm } from "@/components/location-form"
 import { MusicPreferencesForm } from "@/components/music-preferences-form"
 import { NotificationPreferencesForm } from "@/components/notification-preferences-form"
 import { Progress } from "@/components/ui/progress"
-import { WorldAppRequired } from "@/components/world-app-required"
-import { useWorldApp } from "@/hooks/use-world-app"
+import { useMiniKit } from "@/components/minikit-provider"
 import { Bug } from "lucide-react"
 
 const steps = [
@@ -37,7 +36,7 @@ export default function SignupPage() {
   })
   const [showDebug, setShowDebug] = useState(false)
   const router = useRouter()
-  const { isWorldApp, isAvailable, isLoading, error } = useWorldApp()
+  const { isWorldApp, isLoading, error } = useMiniKit()
 
   const progress = ((currentStep + 1) / steps.length) * 100
 
@@ -68,61 +67,6 @@ export default function SignupPage() {
     return (
       <div className="container max-w-4xl py-10 flex items-center justify-center min-h-[50vh]">
         <p>Loading...</p>
-      </div>
-    )
-  }
-
-  // If not in World App and we're on the verification step, show the World App required message
-  // But only if we're not in development mode or MiniKit is not available at all
-  if (!isWorldApp && currentStep === 0 && (!isAvailable || process.env.NODE_ENV !== "development")) {
-    return (
-      <div className="container max-w-4xl py-10">
-        <div className="mb-8 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            <Image
-              src="/placeholder.svg?height=32&width=32&query=world%20logo"
-              alt="World Logo"
-              width={32}
-              height={32}
-            />
-            <span className="text-xl font-bold">World Music</span>
-          </Link>
-        </div>
-
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold">Sign Up</h1>
-          <p className="text-muted-foreground">Complete the steps below to create your account</p>
-        </div>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Orb Verification Required</CardTitle>
-            <CardDescription>You need to verify your identity with World ID to continue</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <WorldAppRequired
-              message="Orb verification requires the World App. Please open this application in the World App to continue."
-              showMockMessage={true}
-            />
-          </CardContent>
-        </Card>
-
-        {/* Debug button at the bottom */}
-        <div className="mt-8 text-center">
-          <button
-            onClick={() => setShowDebug(!showDebug)}
-            className="text-xs text-muted-foreground underline-offset-4 hover:underline flex items-center gap-1 mx-auto"
-          >
-            <Bug className="h-3 w-3" />
-            {showDebug ? "Hide Debug Info" : "Show Debug Info"}
-          </button>
-
-          {showDebug && error && (
-            <div className="mt-2 p-2 border border-gray-200 rounded-md bg-gray-50 text-xs text-left">
-              <p className="text-red-600">{error}</p>
-            </div>
-          )}
-        </div>
       </div>
     )
   }
@@ -194,23 +138,24 @@ export default function SignupPage() {
       </Card>
 
       {/* Debug button at the bottom */}
-      {error && (
-        <div className="mt-8 text-center">
-          <button
-            onClick={() => setShowDebug(!showDebug)}
-            className="text-xs text-muted-foreground underline-offset-4 hover:underline flex items-center gap-1 mx-auto"
-          >
-            <Bug className="h-3 w-3" />
-            {showDebug ? "Hide Debug Info" : "Show Debug Info"}
-          </button>
+      <div className="mt-8 text-center">
+        <button
+          onClick={() => setShowDebug(!showDebug)}
+          className="text-xs text-muted-foreground underline-offset-4 hover:underline flex items-center gap-1 mx-auto"
+        >
+          <Bug className="h-3 w-3" />
+          {showDebug ? "Hide Debug Info" : "Show Debug Info"}
+        </button>
 
-          {showDebug && (
-            <div className="mt-2 p-2 border border-gray-200 rounded-md bg-gray-50 text-xs text-left">
-              <p className="text-red-600">{error}</p>
-            </div>
-          )}
-        </div>
-      )}
+        {showDebug && (
+          <div className="mt-2 p-2 border border-gray-200 rounded-md bg-gray-50 text-xs text-left">
+            <p>World App: {isWorldApp ? "Yes" : "No"}</p>
+            <p>Environment: {process.env.NODE_ENV}</p>
+            <p>MiniKit Available: {typeof (window as any).MiniKit !== "undefined" ? "Yes" : "No"}</p>
+            {error && <p className="text-red-600">Error: {error}</p>}
+          </div>
+        )}
+      </div>
     </div>
   )
 }

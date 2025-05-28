@@ -32,12 +32,19 @@ export async function verifyWorldId(params: VerifyWorldIdParams) {
   //     'Content-Type': 'application/json',
   //   },
   //   body: JSON.stringify({
-  //     ...params,
   //     app_id: WORLD_ID_APP_ID,
   //     action: 'world-music-signup',
-  //     signal: '', // Optional signal
+  //     nullifier_hash: params.nullifier_hash,
+  //     proof: params.proof,
+  //     merkle_root: params.merkle_root,
+  //     verification_level: params.verification_level,
   //   }),
   // })
+  // const data = await response.json()
+  // return {
+  //   success: data.success,
+  //   verified: data.success,
+  // }
 
   return {
     success: true,

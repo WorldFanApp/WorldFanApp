@@ -3,13 +3,13 @@
 import Image from "next/image"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { useWorldApp } from "@/hooks/use-world-app"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { AlertCircle, ExternalLink, Bug } from "lucide-react"
+import { useMiniKit } from "@/components/minikit-provider"
+import { WorldAppQR } from "@/components/world-app-qr"
+import { Bug } from "lucide-react"
 import { useState } from "react"
 
 export default function Home() {
-  const { isWorldApp, isLoading, error } = useWorldApp()
+  const { isWorldApp, isLoading, error } = useMiniKit()
   const [showDebug, setShowDebug] = useState(false)
 
   return (
@@ -29,20 +29,9 @@ export default function Home() {
       </header>
 
       {!isLoading && !isWorldApp && (
-        <Alert className="mx-4 mt-4 bg-yellow-50 border-yellow-200">
-          <AlertCircle className="h-5 w-5 text-yellow-600" />
-          <AlertDescription className="text-yellow-800 ml-2">
-            For the best experience, please open this app in the World App.
-            <a
-              href="https://worldcoin.org/download"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1 underline mt-1"
-            >
-              Download World App <ExternalLink className="h-3 w-3" />
-            </a>
-          </AlertDescription>
-        </Alert>
+        <div className="container mt-4">
+          <WorldAppQR />
+        </div>
       )}
 
       <main className="flex-1">
@@ -113,12 +102,17 @@ export default function Home() {
         </div>
 
         {/* Debug information - only shown when debug mode is enabled */}
-        {showDebug && error && (
+        {showDebug && (
           <div className="container mt-4 p-4 border border-gray-200 rounded-md bg-gray-50">
             <h3 className="text-sm font-medium flex items-center gap-1">
               <Bug className="h-4 w-4" /> Debug Information
             </h3>
-            <p className="text-xs text-red-600 mt-1">{error}</p>
+            <p className="text-xs mt-1">World App: {isWorldApp ? "Yes" : "No"}</p>
+            <p className="text-xs">Environment: {process.env.NODE_ENV}</p>
+            <p className="text-xs">
+              MiniKit Available: {typeof (window as any).MiniKit !== "undefined" ? "Yes" : "No"}
+            </p>
+            {error && <p className="text-xs text-red-600 mt-1">Error: {error}</p>}
           </div>
         )}
       </footer>
