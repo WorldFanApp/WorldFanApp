@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -9,14 +10,22 @@ import { Music, Ticket, GamepadIcon, Settings } from "lucide-react"
 export default function Dashboard() {
   const [userData, setUserData] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const router = useRouter()
 
   useEffect(() => {
+    // Check if user is verified
+    const isVerified = localStorage.getItem("worldIdVerified") === "true"
+    if (!isVerified) {
+      router.push("/")
+      return
+    }
+
     const storedData = localStorage.getItem("userData")
     if (storedData) {
       setUserData(JSON.parse(storedData))
     }
     setIsLoading(false)
-  }, [])
+  }, [router])
 
   if (isLoading) {
     return <div>Loading...</div>

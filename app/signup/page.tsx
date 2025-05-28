@@ -1,21 +1,20 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { OrbVerification } from "@/components/orb-verification"
 import { LocationForm } from "@/components/location-form"
 import { MusicPreferencesForm } from "@/components/music-preferences-form"
 import { NotificationPreferencesForm } from "@/components/notification-preferences-form"
 import { Progress } from "@/components/ui/progress"
 import { useMiniKit } from "@/components/minikit-provider"
-import { Bug } from "lucide-react"
+import { Bug, CheckCircle } from "lucide-react"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 
 const steps = [
-  { id: "orb-verification", title: "Orb Verification" },
   { id: "location", title: "Location" },
   { id: "music-preferences", title: "Music Preferences" },
   { id: "notification-preferences", title: "Notification Preferences" },
@@ -37,6 +36,17 @@ export default function SignupPage() {
   const [showDebug, setShowDebug] = useState(false)
   const router = useRouter()
   const { isWorldApp, isLoading, error } = useMiniKit()
+
+  useEffect(() => {
+    // Check if user is already verified
+    const isVerified = localStorage.getItem("worldIdVerified") === "true"
+    if (!isVerified) {
+      // Redirect to home if not verified
+      router.push("/")
+    } else {
+      setUserData((prev) => ({ ...prev, isOrbVerified: true }))
+    }
+  }, [router])
 
   const progress = ((currentStep + 1) / steps.length) * 100
 
@@ -85,6 +95,15 @@ export default function SignupPage() {
         <p className="text-muted-foreground">Complete the steps below to create your account</p>
       </div>
 
+      {userData.isOrbVerified && (
+        <Alert className="mb-6 bg-green-50 border-green-200">
+          <CheckCircle className="h-5 w-5 text-green-600" />
+          <AlertDescription className="text-green-800 ml-2">
+            Your identity has been verified with World ID
+          </AlertDescription>
+        </Alert>
+      )}
+
       <div className="mb-8">
         <div className="flex justify-between mb-2">
           {steps.map((step, index) => (
@@ -103,22 +122,15 @@ export default function SignupPage() {
         <CardHeader>
           <CardTitle>{steps[currentStep].title}</CardTitle>
           <CardDescription>
-            {currentStep === 0 && "Verify your identity with World ID"}
-            {currentStep === 1 && "Tell us where you're from"}
-            {currentStep === 2 && "Share your music preferences"}
-            {currentStep === 3 && "Set up your notification preferences"}
+            {currentStep === 0 && "Tell us where you're from"}
+            {currentStep === 1 && "Share your music preferences"}
+            {currentStep === 2 && "Set up your notification preferences"}
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {currentStep === 0 && (
-            <OrbVerification
-              onVerified={() => updateUserData({ isOrbVerified: true })}
-              isVerified={userData.isOrbVerified}
-            />
-          )}
-          {currentStep === 1 && <LocationForm userData={userData} updateUserData={updateUserData} />}
-          {currentStep === 2 && <MusicPreferencesForm userData={userData} updateUserData={updateUserData} />}
-          {currentStep === 3 && <NotificationPreferencesForm userData={userData} updateUserData={updateUserData} />}
+          {currentStep === 0 && <LocationForm userData={userData} updateUserData={updateUserData} />}
+          {currentStep === 1 && <MusicPreferencesForm userData={userData} updateUserData={updateUserData} />}
+          {currentStep === 2 && <NotificationPreferencesForm userData={userData} updateUserData={updateUserData} />}
         </CardContent>
         <CardFooter className="flex justify-between">
           <Button variant="outline" onClick={handleBack} disabled={currentStep === 0}>
@@ -127,9 +139,8 @@ export default function SignupPage() {
           <Button
             onClick={handleNext}
             disabled={
-              (currentStep === 0 && !userData.isOrbVerified) ||
-              (currentStep === 1 && (!userData.country || !userData.city)) ||
-              (currentStep === 2 && (!userData.artists.length || !userData.genres.length))
+              (currentStep === 0 && (!userData.country || !userData.city)) ||
+              (currentStep === 1 && (!userData.artists.length || !userData.genres.length))
             }
           >
             {currentStep < steps.length - 1 ? "Next" : "Complete"}
@@ -152,6 +163,7 @@ export default function SignupPage() {
             <p>World App: {isWorldApp ? "Yes" : "No"}</p>
             <p>Environment: {process.env.NODE_ENV}</p>
             <p>MiniKit Available: {typeof (window as any).MiniKit !== "undefined" ? "Yes" : "No"}</p>
+            <p>Verified: {userData.isOrbVerified ? "Yes" : "No"}</p>
             {error && <p className="text-red-600">Error: {error}</p>}
           </div>
         )}

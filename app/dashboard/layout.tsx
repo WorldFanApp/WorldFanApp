@@ -29,10 +29,11 @@ export default function DashboardLayout({
   useEffect(() => {
     setIsClient(true)
 
-    // Check if user data exists
+    // Check if user is verified
+    const isVerified = localStorage.getItem("worldIdVerified") === "true"
     const userData = localStorage.getItem("userData")
-    if (!userData) {
-      router.push("/signup")
+    if (!isVerified || !userData) {
+      router.push("/")
     }
   }, [router])
 
@@ -105,6 +106,7 @@ export default function DashboardLayout({
                 <SidebarMenuButton
                   onClick={() => {
                     localStorage.removeItem("userData")
+                    localStorage.removeItem("worldIdVerified")
                     router.push("/")
                   }}
                 >
