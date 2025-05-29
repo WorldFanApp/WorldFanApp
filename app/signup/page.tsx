@@ -13,6 +13,7 @@ import { NotificationPreferencesForm } from "@/components/notification-preferenc
 import { Progress } from "@/components/ui/progress"
 import { CheckCircle } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { IDKitWidget, VerificationLevel, ISuccessResult } from "@worldcoin/minikit-react"
 
 const steps = [
   { id: "location", title: "Location" },
@@ -34,6 +35,26 @@ export default function SignupPage() {
   })
   const router = useRouter()
   const { data: session, status } = useSession()
+
+  // Minikit State
+  const [minikitVerificationProof, setMinikitVerificationProof] = useState<ISuccessResult | null>(null)
+  const [minikitVerificationError, setMinikitVerificationError] = useState<string | null>(null)
+
+  const handleMinikitSuccess = (result: ISuccessResult) => {
+    console.log("Minikit Verification Success:", result)
+    setMinikitVerificationProof(result)
+    setMinikitVerificationError(null)
+    // Potentially: update session or call a backend endpoint with the proof
+    // For now, just updating local state to show verification.
+    // If using next-auth, this proof might be sent to a backend to update the session.
+  }
+
+  const handleMinikitError = (error: any) => {
+    console.error("Minikit Verification Error:", error)
+    setMinikitVerificationError(error?.message || "An unknown error occurred during Minikit verification.")
+    setMinikitVerificationProof(null)
+  }
+
 
   useEffect(() => {
     // If not authenticated, redirect to home
@@ -114,6 +135,57 @@ export default function SignupPage() {
           </AlertDescription>
         </Alert>
       )}
+
+      {/* World ID Minikit Integration */}
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle>World ID Orb Verification</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {session?.user?.worldcoin_credential_type === "orb" ? (
+            <Alert variant="default" className="bg-green-50 border-green-200">
+              <CheckCircle className="h-5 w-5 text-green-600" />
+              <AlertDescription className="text-green-800 ml-2">
+                You are already Orb Verified (according to your session).
+              </AlertDescription>
+            </Alert>
+          ) : minikitVerificationProof ? (
+            <Alert variant="default" className="bg-blue-50 border-blue-200">
+              <CheckCircle className="h-5 w-5 text-blue-600" />
+              <AlertDescription className="text-blue-800 ml-2">
+                Orb Verification Successful via Minikit! Proof: {JSON.stringify(minikitVerificationProof.proof).substring(0, 100)}...
+                {/* You might want to send this proof to your backend to update the main session */}
+              </AlertDescription>
+            </Alert>
+          ) : (
+            <div>
+              <p className="text-muted-foreground mb-4">
+                {session?.user?.worldcoin_credential_type
+                  ? `Your current session credential type is: ${session.user.worldcoin_credential_type}. `
+                  : "You are not yet Orb Verified. "}
+                Please verify with World ID to continue the signup process with Orb-level verification.
+              </p>
+              <IDKitWidget
+                action="signup-action" // Unique action string for this signup
+                app_id="app_staging_12345abcde12345abcde12345abcde" // Replace with your actual App ID from Developer Portal
+                onSuccess={handleMinikitSuccess}
+                onError={handleMinikitError}
+                verification_level={VerificationLevel.Orb} // Orb-level verification
+                // handleVerify is deprecated, use onSuccess instead
+                // signal={verificationSignal} // If you need to trigger verification manually
+                autoClose={true} // Automatically close the widget on success/error
+              >
+                {({ open }) => <Button onClick={open}>Verify with World ID (Orb)</Button>}
+              </IDKitWidget>
+              {minikitVerificationError && (
+                <Alert variant="destructive" className="mt-4">
+                  <AlertDescription>{minikitVerificationError}</AlertDescription>
+                </Alert>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       <div className="mb-8">
         <div className="flex justify-between mb-2">
