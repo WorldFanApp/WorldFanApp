@@ -167,7 +167,7 @@ export default function SignupPage() {
               </p>
               <IDKitWidget
                 action="signup-action" // Unique action string for this signup
-                app_id="app_staging_12345abcde12345abcde12345abcde" // Replace with your actual App ID from Developer Portal
+                app_id={process.env.NEXT_PUBLIC_WLD_APP_ID || "app_staging_12345abcde12345abcde12345abcde"}
                 onSuccess={handleMinikitSuccess}
                 onError={handleMinikitError}
                 verification_level={VerificationLevel.Orb} // Orb-level verification
