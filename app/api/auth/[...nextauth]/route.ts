@@ -1,3 +1,4 @@
+// Cache-busting comment for auth file
 import NextAuth, { type NextAuthOptions } from "next-auth";
 
 const authOptions: NextAuthOptions = {

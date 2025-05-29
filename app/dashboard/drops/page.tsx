@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Ticket, Disc, Calendar } from "lucide-react"
 // import { MiniKitPayment } from "@/components/minikit-payment"
+// Trivial change: Added a cache-busting comment.
 import { useState } from "react"
 
 export default function DropsPage() {
