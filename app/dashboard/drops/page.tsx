@@ -4,7 +4,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Ticket, Disc, Calendar } from "lucide-react"
-import { MiniKitPayment } from "@/components/minikit-payment"
 import { useState } from "react"
 
 export default function DropsPage() {
@@ -65,13 +64,7 @@ export default function DropsPage() {
                     <h3 className="font-medium">Feature Coming Soon</h3>
                     <p className="text-sm text-muted-foreground">We'll notify you when this feature is available</p>
                   </div>
-                  <MiniKitPayment
-                    amount="10"
-                    description="Concert Ticket Purchase"
-                    reference="ticket-drop-001"
-                    onSuccess={() => setPurchaseStatus("Ticket purchased successfully!")}
-                    onError={(error) => setPurchaseStatus(`Error: ${error}`)}
-                  />
+                  {/* MiniKitPayment component removed */}
                 </div>
                 {purchaseStatus && <p className="text-sm mt-2 text-center">{purchaseStatus}</p>}
               </div>
