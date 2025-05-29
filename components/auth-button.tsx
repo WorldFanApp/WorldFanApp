@@ -15,7 +15,7 @@ export function AuthButton({ callbackUrl = "/signup", className }: AuthButtonPro
   const { data: session, status } = useSession()
 
   const handleSignIn = () => {
-    signIn("worldcoin", { callbackUrl })
+    signIn("worldcoin", { callbackUrl, authorizationParams: { action: process.env.WLD_ACTION_ID } })
   }
 
   const handleSignOut = () => {
