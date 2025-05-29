@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Title</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Placeholder for Minikit SDK script -->
+    <!-- <script src="https://minikit.worldcoin.org/sdk.js"></script> -->
+</head>
+<body>
+    <div id="verification-status">Checking verification status...</div>
+
+    <h2>Signup Form</h2>
+    <form id="signup-form">
+        <div>
+            <label for="country">Country:</label>
+            <select id="country" name="country">
+                <option value="">--Please choose a country--</option>
+                <!-- Options will be added by JavaScript or backend later -->
+            </select>
+        </div>
+
+        <div>
+            <label for="city">Major City:</label>
+            <select id="city" name="city" disabled>
+                <option value="">--Select a country first--</option>
+                <!-- Options will be dynamically populated based on country -->
+            </select>
+        </div>
+
+        <div>
+            <label for="fav-artists">Favorite Musical Artists (comma-separated):</label>
+            <input type="text" id="fav-artists" name="fav-artists" placeholder="e.g., Artist1, Artist2" autocomplete="off">
+            <div id="artist-suggestions"></div>
+        </div>
+
+        <div>
+            <fieldset>
+                <legend>Select Your Favorite Music Genres:</legend>
+                <div>
+                    <input type="checkbox" id="genre-rock" name="music-genre" value="rock">
+                    <label for="genre-rock">Rock</label>
+                </div>
+                <div>
+                    <input type="checkbox" id="genre-pop" name="music-genre" value="pop">
+                    <label for="genre-pop">Pop</label>
+                </div>
+                <div>
+                    <input type="checkbox" id="genre-jazz" name="music-genre" value="jazz">
+                    <label for="genre-jazz">Jazz</label>
+                </div>
+                <div>
+                    <input type="checkbox" id="genre-electronic" name="music-genre" value="electronic">
+                    <label for="genre-electronic">Electronic</label>
+                </div>
+                <div>
+                    <input type="checkbox" id="genre-classical" name="music-genre" value="classical">
+                    <label for="genre-classical">Classical</label>
+                </div>
+                <div>
+                    <input type="checkbox" id="genre-hiphop" name="music-genre" value="hiphop">
+                    <label for="genre-hiphop">Hip Hop</label>
+                </div>
+                 <div>
+                    <input type="checkbox" id="genre-other" name="music-genre" value="other">
+                    <label for="genre-other">Other</label>
+                </div>
+            </fieldset>
+        </div>
+
+        <fieldset>
+            <legend>Account Options:</legend>
+            <div>
+                <input type="radio" id="create-account-anonymous" name="account-type" value="anonymous" checked>
+                <label for="create-account-anonymous">Stay anonymous</label>
+            </div>
+            <div>
+                <input type="radio" id="create-account-verbose" name="account-type" value="verbose">
+                <label for="create-account-verbose">Create account with email and phone notifications</label>
+            </div>
+        </fieldset>
+
+        <div id="account-details" style="display: none;">
+            <div>
+                <label for="email">Email:</label>
+                <input type="email" id="email" name="email" placeholder="you@example.com">
+            </div>
+            <div>
+                <label for="phone">Phone Number:</label>
+                <input type="tel" id="phone" name="phone" placeholder="+1234567890">
+            </div>
+        </div>
+
+        <div>
+            <button type="submit">Submit</button>
+        </div>
+    </form>
+
+    <script src="script.js"></script>
+
+    <hr> <!-- Separator -->
+
+    <div id="dashboard" style="display: none;"> <!-- Hidden by default -->
+        <h2>Dashboard</h2>
+        <div class="tab-buttons">
+            <button class="tab-button active" data-tab="account">Account</button>
+            <button class="tab-button" data-tab="favorites">Favorites</button>
+            <button class="tab-button" data-tab="drops">Drops</button>
+            <button class="tab-button" data-tab="game">Game</button>
+        </div>
+
+        <div class="tab-contents">
+            <div id="account-content" class="tab-pane active">
+                <h3>Account Details</h3>
+                <form id="account-form">
+                    <div>
+                        <label for="account-username">Username:</label>
+                        <input type="text" id="account-username" name="account-username" placeholder="Enter your username">
+                    </div>
+                    <div>
+                        <label for="account-email">Email:</label>
+                        <input type="email" id="account-email" name="account-email" placeholder="your.email@example.com">
+                        <!-- This field could be pre-filled/disabled if user created account -->
+                    </div>
+                    <div>
+                        <label for="account-phone">Phone Number:</label>
+                        <input type="tel" id="account-phone" name="account-phone" placeholder="+1234567890">
+                        <!-- This field could be pre-filled/disabled if user created account -->
+                    </div>
+                    <div>
+                        <button type="button" id="save-account-changes">Save Changes</button>
+                        <button type="button" id="delete-user-data" style="background-color: #dc3545; color: white; margin-left: 10px;">Delete All User Data</button>
+                    </div>
+                </form>
+            </div>
+            <div id="favorites-content" class="tab-pane">
+                <h3>Your Favorites</h3>
+                
+                <h4>Favorite Genres</h4>
+                <div id="display-favorite-genres-container">
+                    <ul id="display-favorite-genres">
+                        <li><em>Populated from signup form.</em></li>
+                        <!-- Example: <li>Rock</li> -->
+                        <!-- Example: <li>Jazz</li> -->
+                    </ul>
+                    <p class="placeholder-text" style="display: none;">No genres selected yet.</p>
+                </div>
+
+                <hr style="margin: 20px 0;">
+
+                <h4>Favorite Musical Artists</h4>
+                <div id="display-favorite-artists-container">
+                    <ul id="display-favorite-artists">
+                        <li><em>Populated from signup form.</em></li>
+                        <!-- Example: <li>The Beatles</li> -->
+                        <!-- Example: <li>Daft Punk</li> -->
+                    </ul>
+                    <p class="placeholder-text" style="display: none;">No artists selected yet.</p>
+                </div>
+            </div>
+            <div id="drops-content" class="tab-pane">
+                <h3>Drops</h3>
+                <p>Drops feature coming soon!</p>
+                <p>Stay tuned for exciting new releases and updates.</p>
+            </div>
+            <div id="game-content" class="tab-pane">
+                <h3>Game</h3>
+                <p>Game feature coming soon!</p>
+                <p>Get ready for an interactive experience.</p>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>
