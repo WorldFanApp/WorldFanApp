@@ -1,38 +1,28 @@
 "use client"
 
-import { signIn, signOut, useSession } from "next-auth/react"
+"use client"
+
+import { signOut, useSession } from "next-auth/react"
 import { Button } from "@/components/ui/button"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { CheckCircle, Loader2 } from "lucide-react"
-import { Badge } from "@/components/ui/badge"
+// Alert, AlertDescription, CheckCircle, Badge removed as they were World ID specific
+import { Loader2 } from "lucide-react"
 
 interface AuthButtonProps {
-  callbackUrl?: string
+  // callbackUrl is no longer used for sign-in
   className?: string
 }
 
-export function AuthButton({ callbackUrl = "/signup", className }: AuthButtonProps) {
+export function AuthButton({ className }: AuthButtonProps) {
   const { data: session, status } = useSession()
 
-  const handleSignIn = () => {
-    signIn("worldcoin", { callbackUrl })
-  }
+  // handleSignIn is removed as it was World ID specific.
+  // If other sign-in methods were to be added, they would go here.
 
   const handleSignOut = () => {
-    signOut({ callbackUrl: "/" })
+    signOut({ callbackUrl: "/" }) // Default callback to root
   }
 
-  // Get credential type badge color
-  const getCredentialBadgeColor = (type?: string) => {
-    switch (type) {
-      case "orb":
-        return "bg-green-100 text-green-800 border-green-200"
-      case "phone":
-        return "bg-blue-100 text-blue-800 border-blue-200"
-      default:
-        return "bg-gray-100 text-gray-800 border-gray-200"
-    }
-  }
+  // getCredentialBadgeColor removed as it was World ID specific
 
   if (status === "loading") {
     return (
@@ -45,30 +35,16 @@ export function AuthButton({ callbackUrl = "/signup", className }: AuthButtonPro
 
   if (session) {
     return (
-      <div className="space-y-4">
-        <Alert className="bg-green-50 border-green-200">
-          <CheckCircle className="h-5 w-5 text-green-600" />
-          <AlertDescription className="text-green-800 ml-2 flex items-center justify-between w-full">
-            <span>Verified as {session.user?.name || "World ID User"}</span>
-            {session.user?.worldcoin_credential_type && (
-              <Badge className={getCredentialBadgeColor(session.user.worldcoin_credential_type)}>
-                {session.user.worldcoin_credential_type === "orb"
-                  ? "Orb Verified"
-                  : session.user.worldcoin_credential_type}
-              </Badge>
-            )}
-          </AlertDescription>
-        </Alert>
-        <Button onClick={handleSignOut} className={className}>
-          Sign Out
-        </Button>
-      </div>
+      // Removed the Alert displaying World ID verification status
+      <Button onClick={handleSignOut} className={className}>
+        Sign Out
+      </Button>
     )
   }
 
-  return (
-    <Button onClick={handleSignIn} className={className} size="lg">
-      Sign In with World ID
-    </Button>
-  )
+  // No session and no sign-in method left in this component.
+  // Render null or a placeholder if desired, but per instructions,
+  // if it becomes empty, it might be eligible for removal.
+  // For now, it will render nothing if there's no session.
+  return null
 }
