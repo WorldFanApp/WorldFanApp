@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { verifyCloudProof } from '@worldcoin/idkit';
+import type { IVerifyResponse } from '@worldcoin/idkit'; // Ensure IVerifyResponse is imported as a type
 
 export async function POST(request: Request) {
   const { proof, signal: receivedSignal } = await request.json();
@@ -23,7 +23,11 @@ export async function POST(request: Request) {
   // which is the standard practice for dynamic signals.
 
   try {
-    const verificationResponse = await verifyCloudProof(
+    // Dynamically import verifyCloudProof
+    const { verifyCloudProof } = await import('@worldcoin/idkit');
+
+    // Use IVerifyResponse for the type of the verificationResponse
+    const verificationResponse: IVerifyResponse = await verifyCloudProof(
       proof,
       APP_ID,
       ACTION_ID,
@@ -36,11 +40,12 @@ export async function POST(request: Request) {
       // Log the detailed error for server-side debugging
       console.error('World ID Verification Failed:', verificationResponse);
       // Return a generic error or specific details based on `verificationResponse.code` and `verificationResponse.detail`
+      // Ensure the structure matches what IVerifyResponse might imply for error (if it has specific error fields)
       return NextResponse.json(
         {
           error: 'Verification failed',
-          code: verificationResponse.code,
-          detail: verificationResponse.detail,
+          code: verificationResponse.code, // Assuming 'code' is part of IVerifyResponse on failure
+          detail: verificationResponse.detail, // Assuming 'detail' is part of IVerifyResponse on failure
         },
         { status: 400 }
       );
