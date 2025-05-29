@@ -9,7 +9,7 @@ module.exports = {
     '^@worldcoin/idkit$': '<rootDir>/node_modules/@worldcoin/idkit',
   },
   transform: {
-    '^.+\\.(js|jsx|ts|tsx)$': 'babel-jest',
+    /* '^.+\\.(js|jsx|ts|tsx)$': 'babel-jest', */
   },
   // Ensure that @worldcoin/idkit and its dependencies (if they are ESM or need transformation)
   // are NOT ignored by transformations.
