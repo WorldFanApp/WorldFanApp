@@ -4,7 +4,7 @@ import { Inter } from "next/font/google"
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { SessionProvider } from "@/components/session-provider"
-import { MiniKitProvider } from '@worldcoin/minikit-js'; // Attempting direct import
+import { MiniKitProvider } from '@worldcoin/minikit-js/minikit-provider';
 
 const inter = Inter({ subsets: ["latin"] })
 
