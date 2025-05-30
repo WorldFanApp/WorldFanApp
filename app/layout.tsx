@@ -4,6 +4,7 @@ import { Inter } from "next/font/google"
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { SessionProvider } from "@/components/session-provider"
+import { MiniKitProvider } from '@worldcoin/minikit-js'; // Attempting direct import
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -25,9 +26,11 @@ export default function RootLayout({
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
       </head>
       <body className={inter.className}>
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-          <SessionProvider>{children}</SessionProvider>
-        </ThemeProvider>
+        <MiniKitProvider>
+          <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+            <SessionProvider>{children}</SessionProvider>
+          </ThemeProvider>
+        </MiniKitProvider>
       </body>
     </html>
   )
