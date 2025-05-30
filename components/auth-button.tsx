@@ -54,8 +54,13 @@ export function AuthButton({ callbackUrl = "/signup", className }: AuthButtonPro
   };
 
   const initiateMiniAppVerify = async () => {
-    if (!MiniKit.isInstalled()) {
-      console.warn('MiniKit not installed. Please install World App or use a compatible browser.');
+    console.log("[AuthButton] initiateMiniAppVerify called");
+
+    const isMiniKitInstalled = MiniKit.isInstalled();
+    console.log("[AuthButton] MiniKit.isInstalled():", isMiniKitInstalled);
+
+    if (!isMiniKitInstalled) {
+      console.warn("[AuthButton] MiniKit not detected as installed. Verification cannot proceed.");
       // Optionally: guide user to install World App or open a fallback URL
       // window.open("https://worldcoin.org/download", "_blank");
       return;
@@ -65,18 +70,26 @@ export function AuthButton({ callbackUrl = "/signup", className }: AuthButtonPro
       action: "worldfansignup", // Use your specific action ID
       verification_level: VerificationLevel.Orb, // Or VerificationLevel.Device
     };
+    console.log("[AuthButton] Preparing verifyPayload:", verifyPayload);
 
+    let result; // Declare result outside try to log it in broader scope if needed, though primarily used within try
     try {
-      const result = await MiniKit.commandsAsync.verify(verifyPayload);
+      console.log("[AuthButton] Calling MiniKit.commandsAsync.verify...");
+      result = await MiniKit.commandsAsync.verify(verifyPayload);
+      console.log("[AuthButton] MiniKit.commandsAsync.verify returned:", result);
+
       if (result.status === 'error') {
-        console.error('MiniApp verification error:', result.errorToast?.message || result.error);
+        console.error('[AuthButton] MiniApp verification error after successful call (result.status is error):', result.errorToast?.message || result.error);
         // Display error to user, e.g., using a toast notification
       } else if (result.status === 'success' && result.finalPayload) {
+        console.log("[AuthButton] MiniApp verification success, proceeding to handleVerification.");
         // The type assertion here assumes finalPayload matches ISuccessResult structure
         handleVerification(result.finalPayload as ISuccessResult);
+      } else {
+        console.warn("[AuthButton] MiniKit.commandsAsync.verify returned success but finalPayload is missing or status is unexpected:", result);
       }
     } catch (error) {
-      console.error('Error during MiniKit.commandsAsync.verify:', error);
+      console.error('[AuthButton] Error during MiniKit.commandsAsync.verify call itself:', error);
       // Handle unexpected errors during the verify call
     }
   };
