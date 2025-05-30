@@ -89,16 +89,38 @@ export function AuthButton({ callbackUrl = "/signup", className }: AuthButtonPro
     try {
       addDebugMessage("[AuthButton] Calling MiniKit.commandsAsync.verify...");
       result = await MiniKit.commandsAsync.verify(verifyPayload);
-      addDebugMessage("[AuthButton] MiniKit.commandsAsync.verify returned:", result);
+      addDebugMessage("[AuthButton] MiniKit.commandsAsync.verify returned (raw):", result);
 
-      if (result.status === 'error') {
-        const errorMsg = result.errorToast?.message || JSON.stringify(result.error);
-        addDebugMessage(`[AuthButton] Error: MiniApp verification error after successful call (result.status is error): ${errorMsg}`);
-      } else if (result.status === 'success' && result.finalPayload) {
-        addDebugMessage("[AuthButton] MiniApp verification success, proceeding to handleVerification.");
-        handleVerification(result.finalPayload as ISuccessResult);
-      } else {
-        addDebugMessage("[AuthButton] Warn: MiniKit.commandsAsync.verify returned success but finalPayload is missing or status is unexpected:", result);
+      // The primary indicator of a successful proof generation is the presence of finalPayload
+      // and its internal status being 'success'.
+      if (result.finalPayload) {
+        addDebugMessage("[AuthButton] finalPayload received:", result.finalPayload);
+        if (result.finalPayload.status === 'success') {
+          addDebugMessage("[AuthButton] MiniApp verification success (finalPayload.status is 'success'), proceeding to handleVerification.");
+          // Ensure ISuccessResult fields (proof, merkle_root, nullifier_hash) are present before casting
+          if (result.finalPayload.proof && result.finalPayload.merkle_root && result.finalPayload.nullifier_hash) {
+            handleVerification(result.finalPayload as ISuccessResult);
+          } else {
+            addDebugMessage("[AuthButton] Error: finalPayload.status is 'success', but essential proof fields are missing.", result.finalPayload);
+          }
+        } else if (result.finalPayload.status === 'error') {
+          // This case might occur if the MiniApp itself encounters an issue generating the proof
+          // and reports that error within the finalPayload structure.
+          addDebugMessage(`[AuthButton] Error: MiniApp verification failed (finalPayload.status is '${result.finalPayload.status}'). Full finalPayload:`, result.finalPayload);
+        } else {
+          // Handles cases where finalPayload.status is neither 'success' nor 'error'
+          addDebugMessage(`[AuthButton] Warn: finalPayload received, but its status is unexpected ('${result.finalPayload.status}'). Full finalPayload:`, result.finalPayload);
+        }
+      } else if (result.status === 'error') {
+        // This 'error' status is at the top level of the 'result' object from commandsAsync.verify.
+        // It usually indicates an issue before or during the attempt to generate a proof,
+        // such as the user cancelling, or a problem with the MiniApp interaction itself.
+        const errorMsg = result.errorToast?.message || JSON.stringify(result.error || "Unknown error from MiniKit verify");
+        addDebugMessage(`[AuthButton] Error: MiniKit.commandsAsync.verify reported top-level error (result.status is 'error'): ${errorMsg}`);
+      }
+       else {
+        // Catch-all for other unexpected structures of 'result'.
+        addDebugMessage("[AuthButton] Warn: MiniKit.commandsAsync.verify returned an unexpected result structure (no finalPayload and result.status is not 'error'). Full result:", result);
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
