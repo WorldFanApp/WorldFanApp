@@ -2,7 +2,7 @@
 
 import { signIn, signOut, useSession } from "next-auth/react"
 import { useRouter } from "next/navigation";
-import { IDKitWidget } from "@worldcoin/idkit";
+import { MiniKit, VerifyCommandInput, VerificationLevel, ISuccessResult } from '@worldcoin/minikit-js';
 import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { CheckCircle, Loader2 } from "lucide-react"
@@ -17,14 +17,13 @@ export function AuthButton({ callbackUrl = "/signup", className }: AuthButtonPro
   const { data: session, status } = useSession()
   const router = useRouter();
 
-  const handleVerification = async (result: any) => {
-    console.log("IDKitWidget onSuccess result:", result); // Log the raw result from IDKit
+  // Adjusted to accept ISuccessResult from MiniKit and send the new payload structure
+  const handleVerification = async (miniKitPayload: ISuccessResult) => {
+    console.log("MiniKit verification payload:", miniKitPayload);
 
-    const { proof, merkle_root, nullifier_hash } = result;
-
-    if (!proof || !merkle_root || !nullifier_hash) {
-      console.error("Incomplete proof data received from IDKitWidget:", result);
-      // Optionally, display a message to the user
+    // The MiniKit ISuccessResult directly contains proof, merkle_root, nullifier_hash
+    if (!miniKitPayload.proof || !miniKitPayload.merkle_root || !miniKitPayload.nullifier_hash) {
+      console.error("Incomplete proof data received from MiniKit:", miniKitPayload);
       return;
     }
 
@@ -35,33 +34,59 @@ export function AuthButton({ callbackUrl = "/signup", className }: AuthButtonPro
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          proof,
-          merkle_root,
-          nullifier_hash,
+          payload: miniKitPayload, // Send the whole payload as per new backend expectation
+          action: "worldfansignup", // The action ID used for verification
+          signal: undefined, // Adjust if signal is used
         }),
       });
 
       const data = await response.json();
 
       if (response.ok && data.success) {
-        console.log("World ID verified successfully!");
-        // It's important that the page we redirect to (`/signup`)
-        // can handle the user state post-verification.
-        // This might involve checking for a session or other flags.
+        console.log("World ID verified successfully via MiniKit!");
         router.push("/signup");
       } else {
-        console.error("Verification failed:", data.error || "Unknown error from /api/verify");
-        // Optionally, display a message to the user
+        console.error("MiniKit Backend Verification failed:", data.error || "Unknown error from /api/verify");
       }
     } catch (error) {
-      console.error("Error calling /api/verify:", error);
-      // Optionally, display a message to the user
+      console.error("Error calling /api/verify with MiniKit payload:", error);
     }
   };
 
+  const initiateMiniAppVerify = async () => {
+    if (!MiniKit.isInstalled()) {
+      console.warn('MiniKit not installed. Please install World App or use a compatible browser.');
+      // Optionally: guide user to install World App or open a fallback URL
+      // window.open("https://worldcoin.org/download", "_blank");
+      return;
+    }
+
+    const verifyPayload: VerifyCommandInput = {
+      action: "worldfansignup", // Use your specific action ID
+      verification_level: VerificationLevel.Orb, // Or VerificationLevel.Device
+    };
+
+    try {
+      const result = await MiniKit.commandsAsync.verify(verifyPayload);
+      if (result.status === 'error') {
+        console.error('MiniApp verification error:', result.errorToast?.message || result.error);
+        // Display error to user, e.g., using a toast notification
+      } else if (result.status === 'success' && result.finalPayload) {
+        // The type assertion here assumes finalPayload matches ISuccessResult structure
+        handleVerification(result.finalPayload as ISuccessResult);
+      }
+    } catch (error) {
+      console.error('Error during MiniKit.commandsAsync.verify:', error);
+      // Handle unexpected errors during the verify call
+    }
+  };
+
+  // This handleSignIn might be fully replaced by initiateMiniAppVerify
   const handleSignIn = () => {
-    // This function might be deprecated if IDKitWidget handles sign-in directly
-    // or if handleVerification triggers it.
+    // This function is likely no longer needed if MiniKit is the primary sign-in method
+    // For now, let's keep it but it might be removed later.
+    // initiateMiniAppVerify(); // Or call signIn("worldcoin") if that's still a separate path
+    console.log("Legacy handleSignIn called, consider removing or integrating with MiniKit flow.");
     signIn("worldcoin", { callbackUrl })
   }
 
@@ -114,17 +139,9 @@ export function AuthButton({ callbackUrl = "/signup", className }: AuthButtonPro
   }
 
   return (
-    <IDKitWidget
-      app_id="app_7a9639a92f85fcf27213f982eddb5064"
-      action="worldfansignup"
-      onSuccess={handleVerification}
-      // handleVerify={handleVerification} // As per prompt, using onSuccess for now
-    >
-      {({ open }) => (
-        <Button onClick={open} className={className} size="lg">
-          Sign In with World ID
-        </Button>
-      )}
-    </IDKitWidget>
+    // IDKitWidget removed, Button now directly calls initiateMiniAppVerify
+    <Button onClick={initiateMiniAppVerify} className={className} size="lg">
+      Sign In with World ID
+    </Button>
   )
 }

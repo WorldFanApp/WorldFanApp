@@ -1,50 +1,52 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { verifyCloudProof, IVerifyResponse, ISuccessResult } from '@worldcoin/minikit-js';
+
+// Define the expected request body structure
+interface IRequestPayload {
+  payload: ISuccessResult; // This is the finalPayload from MiniKit on the frontend
+  action: string;
+  signal?: string;
+}
 
 export async function POST(req: NextRequest) {
   try {
-    const { proof, merkle_root, nullifier_hash } = await req.json();
+    const { payload, action, signal } = (await req.json()) as IRequestPayload;
 
-    if (!proof || !merkle_root || !nullifier_hash) {
-      return NextResponse.json({ success: false, error: "Missing required parameters" }, { status: 400 });
+    if (!payload || !action) {
+      return NextResponse.json({ success: false, error: "Missing required parameters: payload and action are required." }, { status: 400 });
     }
 
-    const worldcoinVerifyPayload = {
-      app_id: "app_7a9639a92f85fcf27213f982eddb5064",
-      action: "worldfansignup",
-      signal: null, // As per prompt, can be omitted if not used, example shows null
-      proof: proof,
-      merkle_root: merkle_root,
-      nullifier_hash: nullifier_hash,
-    };
+    // Retrieve app_id from environment variables
+    // The user specified WLD_APP_ID=app_7a9639a92f85fcf27213f982eddb5064
+    // Ensure this environment variable is set in your deployment environment.
+    const app_id = process.env.WLD_APP_ID as `app_${string}` | undefined;
 
-    const verifyUrl = "https://developer.worldcoin.org/api/v1/verify";
+    if (!app_id) {
+      console.error("WLD_APP_ID environment variable is not set.");
+      return NextResponse.json({ success: false, error: "Server configuration error: App ID not set." }, { status: 500 });
+    }
 
-    const verifyRes = await fetch(verifyUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(worldcoinVerifyPayload),
-    });
+    // The action from the request body should match the one configured for the app_id
+    // Signal can be undefined if not used
 
-    const verifyData = await verifyRes.json();
+    const verifyRes: IVerifyResponse = await verifyCloudProof(payload, app_id, action, signal);
 
-    if (verifyRes.ok && verifyData.success) {
-      // Verification successful, proceed with any app-specific logic
-      // For now, just return success
-      return NextResponse.json({ success: true });
+    if (verifyRes.success) {
+      // Verification successful
+      // Optionally, you can do further checks here, e.g., verifyRes.action matches your expected action
+      return NextResponse.json({ success: true, ...verifyRes }, { status: 200 });
     } else {
       // Verification failed
-      console.error("Worldcoin verification failed:", verifyData);
-      return NextResponse.json(
-        { success: false, error: verifyData.detail || "Verification failed with Worldcoin" },
-        { status: verifyRes.status === 200 ? 400 : verifyRes.status } // If Worldcoin returns 200 but success:false, use 400
-      );
+      console.error("Cloud verification failed:", verifyRes);
+      return NextResponse.json({ success: false, ...verifyRes }, { status: 400 });
     }
   } catch (error) {
     console.error("Error in verification API route:", error);
-    let errorMessage = "An unknown error occurred";
-    if (error instanceof Error) {
+    let errorMessage = "An unknown server error occurred during verification.";
+    if (error instanceof SyntaxError) { // Error parsing JSON
+      errorMessage = "Invalid request body: Please provide valid JSON.";
+      return NextResponse.json({ success: false, error: errorMessage }, { status: 400 });
+    } else if (error instanceof Error) {
       errorMessage = error.message;
     }
     return NextResponse.json({ success: false, error: errorMessage }, { status: 500 });
