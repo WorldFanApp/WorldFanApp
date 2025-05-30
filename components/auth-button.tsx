@@ -2,6 +2,7 @@
 
 import { signIn, signOut, useSession } from "next-auth/react"
 import { useRouter } from "next/navigation";
+import { useState } from "react"; // Added useState
 import { MiniKit, VerifyCommandInput, VerificationLevel, ISuccessResult } from '@worldcoin/minikit-js';
 import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription } from "@/components/ui/alert"
@@ -16,81 +17,92 @@ interface AuthButtonProps {
 export function AuthButton({ callbackUrl = "/signup", className }: AuthButtonProps) {
   const { data: session, status } = useSession()
   const router = useRouter();
+  const [debugMessages, setDebugMessages] = useState<string[]>([]);
+
+  const addDebugMessage = (message: string, data?: any) => {
+    const fullMessage = data ? `${message} ${JSON.stringify(data, null, 2)}` : message;
+    setDebugMessages(prev => [...prev, fullMessage]);
+    // Also log to console for traditional debugging
+    if (message.toLowerCase().includes("error") || message.toLowerCase().includes("warn")) {
+      console.warn(fullMessage, data);
+    } else {
+      console.log(fullMessage, data);
+    }
+  };
 
   // Adjusted to accept ISuccessResult from MiniKit and send the new payload structure
   const handleVerification = async (miniKitPayload: ISuccessResult) => {
-    console.log("MiniKit verification payload:", miniKitPayload);
+    addDebugMessage("[AuthButton] handleVerification called with payload:", miniKitPayload);
 
-    // The MiniKit ISuccessResult directly contains proof, merkle_root, nullifier_hash
     if (!miniKitPayload.proof || !miniKitPayload.merkle_root || !miniKitPayload.nullifier_hash) {
-      console.error("Incomplete proof data received from MiniKit:", miniKitPayload);
+      addDebugMessage("[AuthButton] Error: Incomplete proof data received from MiniKit.", miniKitPayload);
       return;
     }
 
     try {
+      addDebugMessage("[AuthButton] Calling /api/verify with payload:", { payload: miniKitPayload, action: "worldfansignup", signal: undefined });
       const response = await fetch("/api/verify", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          payload: miniKitPayload, // Send the whole payload as per new backend expectation
-          action: "worldfansignup", // The action ID used for verification
-          signal: undefined, // Adjust if signal is used
+          payload: miniKitPayload,
+          action: "worldfansignup",
+          signal: undefined,
         }),
       });
 
       const data = await response.json();
+      addDebugMessage("[AuthButton] /api/verify response:", data);
 
       if (response.ok && data.success) {
-        console.log("World ID verified successfully via MiniKit!");
+        addDebugMessage("[AuthButton] World ID verified successfully via MiniKit!");
         router.push("/signup");
       } else {
-        console.error("MiniKit Backend Verification failed:", data.error || "Unknown error from /api/verify");
+        addDebugMessage("[AuthButton] Error: MiniKit Backend Verification failed:", data.error || "Unknown error from /api/verify");
       }
     } catch (error) {
-      console.error("Error calling /api/verify with MiniKit payload:", error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      addDebugMessage(`[AuthButton] Exception during /api/verify call: ${errorMessage}`);
     }
   };
 
   const initiateMiniAppVerify = async () => {
-    console.log("[AuthButton] initiateMiniAppVerify called");
+    addDebugMessage("[AuthButton] initiateMiniAppVerify called");
 
     const isMiniKitInstalled = MiniKit.isInstalled();
-    console.log("[AuthButton] MiniKit.isInstalled():", isMiniKitInstalled);
+    addDebugMessage("[AuthButton] MiniKit.isInstalled():", isMiniKitInstalled);
 
     if (!isMiniKitInstalled) {
-      console.warn("[AuthButton] MiniKit not detected as installed. Verification cannot proceed.");
-      // Optionally: guide user to install World App or open a fallback URL
-      // window.open("https://worldcoin.org/download", "_blank");
+      addDebugMessage("[AuthButton] Warn: MiniKit not detected as installed. Verification cannot proceed.");
       return;
     }
 
     const verifyPayload: VerifyCommandInput = {
-      action: "worldfansignup", // Use your specific action ID
-      verification_level: VerificationLevel.Orb, // Or VerificationLevel.Device
+      action: "worldfansignup",
+      verification_level: VerificationLevel.Orb,
     };
-    console.log("[AuthButton] Preparing verifyPayload:", verifyPayload);
+    addDebugMessage("[AuthButton] Preparing verifyPayload:", verifyPayload);
 
-    let result; // Declare result outside try to log it in broader scope if needed, though primarily used within try
+    let result;
     try {
-      console.log("[AuthButton] Calling MiniKit.commandsAsync.verify...");
+      addDebugMessage("[AuthButton] Calling MiniKit.commandsAsync.verify...");
       result = await MiniKit.commandsAsync.verify(verifyPayload);
-      console.log("[AuthButton] MiniKit.commandsAsync.verify returned:", result);
+      addDebugMessage("[AuthButton] MiniKit.commandsAsync.verify returned:", result);
 
       if (result.status === 'error') {
-        console.error('[AuthButton] MiniApp verification error after successful call (result.status is error):', result.errorToast?.message || result.error);
-        // Display error to user, e.g., using a toast notification
+        const errorMsg = result.errorToast?.message || JSON.stringify(result.error);
+        addDebugMessage(`[AuthButton] Error: MiniApp verification error after successful call (result.status is error): ${errorMsg}`);
       } else if (result.status === 'success' && result.finalPayload) {
-        console.log("[AuthButton] MiniApp verification success, proceeding to handleVerification.");
-        // The type assertion here assumes finalPayload matches ISuccessResult structure
+        addDebugMessage("[AuthButton] MiniApp verification success, proceeding to handleVerification.");
         handleVerification(result.finalPayload as ISuccessResult);
       } else {
-        console.warn("[AuthButton] MiniKit.commandsAsync.verify returned success but finalPayload is missing or status is unexpected:", result);
+        addDebugMessage("[AuthButton] Warn: MiniKit.commandsAsync.verify returned success but finalPayload is missing or status is unexpected:", result);
       }
     } catch (error) {
-      console.error('[AuthButton] Error during MiniKit.commandsAsync.verify call itself:', error);
-      // Handle unexpected errors during the verify call
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      addDebugMessage(`[AuthButton] Exception during MiniKit.commandsAsync.verify call itself: ${errorMessage}`);
     }
   };
 
@@ -151,10 +163,34 @@ export function AuthButton({ callbackUrl = "/signup", className }: AuthButtonPro
     )
   }
 
+  // When no session, show the sign-in button and debug logs
   return (
-    // IDKitWidget removed, Button now directly calls initiateMiniAppVerify
-    <Button onClick={initiateMiniAppVerify} className={className} size="lg">
-      Sign In with World ID
-    </Button>
+    <div className="flex flex-col items-center space-y-4">
+      <Button onClick={initiateMiniAppVerify} className={className} size="lg">
+        Sign In with World ID
+      </Button>
+      {debugMessages.length > 0 && (
+        <div className="w-full max-w-md p-4 mt-4 border border-gray-300 rounded-md bg-gray-50 dark:bg-gray-800 dark:border-gray-700">
+          <div className="flex justify-between items-center mb-2">
+            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">On-Page Debug Log:</h3>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setDebugMessages([])}
+              className="text-xs"
+            >
+              Clear Log
+            </Button>
+          </div>
+          <div className="max-h-48 overflow-y-auto text-xs text-gray-600 dark:text-gray-400 space-y-1 bg-white dark:bg-gray-900 p-2 rounded">
+            {debugMessages.map((msg, index) => (
+              <div key={index} className="whitespace-pre-wrap break-words">
+                {msg}
+              </div>
+            ))}
+          dıv>
+        </div>
+      )}
+    </div>
   )
 }
