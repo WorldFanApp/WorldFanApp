@@ -188,7 +188,7 @@ export function AuthButton({ callbackUrl = "/signup", className }: AuthButtonPro
                 {msg}
               </div>
             ))}
-          dıv>
+          </div>
         </div>
       )}
     </div>
