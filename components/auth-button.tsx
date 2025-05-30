@@ -1,6 +1,8 @@
 "use client"
 
 import { signIn, signOut, useSession } from "next-auth/react"
+import { useRouter } from "next/navigation";
+import { IDKitWidget } from "@worldcoin/idkit";
 import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { CheckCircle, Loader2 } from "lucide-react"
@@ -13,8 +15,53 @@ interface AuthButtonProps {
 
 export function AuthButton({ callbackUrl = "/signup", className }: AuthButtonProps) {
   const { data: session, status } = useSession()
+  const router = useRouter();
+
+  const handleVerification = async (result: any) => {
+    console.log("IDKitWidget onSuccess result:", result); // Log the raw result from IDKit
+
+    const { proof, merkle_root, nullifier_hash } = result;
+
+    if (!proof || !merkle_root || !nullifier_hash) {
+      console.error("Incomplete proof data received from IDKitWidget:", result);
+      // Optionally, display a message to the user
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/verify", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          proof,
+          merkle_root,
+          nullifier_hash,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        console.log("World ID verified successfully!");
+        // It's important that the page we redirect to (`/signup`)
+        // can handle the user state post-verification.
+        // This might involve checking for a session or other flags.
+        router.push("/signup");
+      } else {
+        console.error("Verification failed:", data.error || "Unknown error from /api/verify");
+        // Optionally, display a message to the user
+      }
+    } catch (error) {
+      console.error("Error calling /api/verify:", error);
+      // Optionally, display a message to the user
+    }
+  };
 
   const handleSignIn = () => {
+    // This function might be deprecated if IDKitWidget handles sign-in directly
+    // or if handleVerification triggers it.
     signIn("worldcoin", { callbackUrl })
   }
 
@@ -67,8 +114,17 @@ export function AuthButton({ callbackUrl = "/signup", className }: AuthButtonPro
   }
 
   return (
-    <Button onClick={handleSignIn} className={className} size="lg">
-      Sign In with World ID
-    </Button>
+    <IDKitWidget
+      app_id="app_7a9639a92f85fcf27213f982eddb5064"
+      action="worldfansignup"
+      onSuccess={handleVerification}
+      // handleVerify={handleVerification} // As per prompt, using onSuccess for now
+    >
+      {({ open }) => (
+        <Button onClick={open} className={className} size="lg">
+          Sign In with World ID
+        </Button>
+      )}
+    </IDKitWidget>
   )
 }
