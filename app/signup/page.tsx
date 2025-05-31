@@ -98,20 +98,6 @@ export default function SignupPage() {
         <p className="text-muted-foreground">Complete the steps below to create your account</p>
       </div>
 
-      {session && (
-        <Alert className="mb-6 bg-green-50 border-green-200">
-          <CheckCircle className="h-5 w-5 text-green-600" />
-          <AlertDescription className="text-green-800 ml-2 flex items-center justify-between w-full">
-            <span>Signed in as {session.user?.name || session.user?.email || "Verified User"}</span>
-            {session.user?.worldcoin_credential_type && (
-              <span className="bg-green-100 text-green-800 px-2 py-0.5 rounded-full text-xs font-medium">
-                {session.user.worldcoin_credential_type}
-              </span>
-            )}
-          </AlertDescription>
-        </Alert>
-      )}
-
       <div className="mb-8">
         <div className="flex justify-between mb-2">
           {steps.map((step, index) => (
@@ -130,7 +116,6 @@ export default function SignupPage() {
         <CardHeader>
           <CardTitle>{steps[currentStep].title}</CardTitle>
           <CardDescription>
-            {currentStep === -1 && "Tell us where you're from"}
             {currentStep === 0 && "Share your music preferences"}
             {currentStep === 1 && "Set up your notification preferences"}
           </CardDescription>
