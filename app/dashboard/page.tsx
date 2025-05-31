@@ -13,12 +13,9 @@ export default function Dashboard() {
   const router = useRouter()
 
   useEffect(() => {
-    // Check if user is verified
-    const isVerified = localStorage.getItem("worldIdVerified") === "true"
-    if (!isVerified) {
-      router.push("/")
-      return
-    }
+    // The worldIdVerified check has been removed.
+    // Authentication and signup completion (presence of userData)
+    // are expected to be handled by the layout or higher-order components.
 
     const storedData = localStorage.getItem("userData")
     if (storedData) {
