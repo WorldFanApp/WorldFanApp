@@ -15,7 +15,6 @@ import { CheckCircle } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 
 const steps = [
-  { id: "location", title: "Location" },
   { id: "music-preferences", title: "Music Preferences" },
   { id: "notification-preferences", title: "Notification Preferences" },
 ]
@@ -23,8 +22,6 @@ const steps = [
 export default function SignupPage() {
   const [currentStep, setCurrentStep] = useState(0)
   const [userData, setUserData] = useState({
-    country: "",
-    city: "",
     artists: [],
     genres: [],
     createAccount: false,
@@ -133,15 +130,14 @@ export default function SignupPage() {
         <CardHeader>
           <CardTitle>{steps[currentStep].title}</CardTitle>
           <CardDescription>
-            {currentStep === 0 && "Tell us where you're from"}
-            {currentStep === 1 && "Share your music preferences"}
-            {currentStep === 2 && "Set up your notification preferences"}
+            {currentStep === -1 && "Tell us where you're from"}
+            {currentStep === 0 && "Share your music preferences"}
+            {currentStep === 1 && "Set up your notification preferences"}
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {currentStep === 0 && <LocationForm userData={userData} updateUserData={updateUserData} />}
-          {currentStep === 1 && <MusicPreferencesForm userData={userData} updateUserData={updateUserData} />}
-          {currentStep === 2 && <NotificationPreferencesForm userData={userData} updateUserData={updateUserData} />}
+          {currentStep === 0 && <MusicPreferencesForm userData={userData} updateUserData={updateUserData} />}
+          {currentStep === 1 && <NotificationPreferencesForm userData={userData} updateUserData={updateUserData} />}
         </CardContent>
         <CardFooter className="flex justify-between">
           <Button variant="outline" onClick={handleBack} disabled={currentStep === 0}>
@@ -150,8 +146,7 @@ export default function SignupPage() {
           <Button
             onClick={handleNext}
             disabled={
-              (currentStep === 0 && (!userData.country || !userData.city)) ||
-              (currentStep === 1 && (!userData.artists.length || !userData.genres.length))
+              (currentStep === 0 && (!userData.artists.length || !userData.genres.length))
             }
           >
             {currentStep < steps.length - 1 ? "Next" : "Complete"}
