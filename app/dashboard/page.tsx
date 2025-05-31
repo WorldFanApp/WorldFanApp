@@ -13,16 +13,25 @@ export default function Dashboard() {
   const router = useRouter()
 
   useEffect(() => {
-    // Check if user is verified
-    const isVerified = localStorage.getItem("worldIdVerified") === "true"
-    if (!isVerified) {
-      router.push("/")
-      return
-    }
+    // The worldIdVerified check has been removed.
+    // Authentication and signup completion (presence of userData)
+    // are expected to be handled by the layout or higher-order components.
 
     const storedData = localStorage.getItem("userData")
     if (storedData) {
-      setUserData(JSON.parse(storedData))
+      try {
+        const parsedData = JSON.parse(storedData);
+        setUserData(parsedData);
+      } catch (error) {
+        console.error("Error parsing userData from localStorage:", error);
+        setUserData(null); // Set to null to trigger "No user data found" or similar
+        localStorage.removeItem("userData"); // Remove corrupted data
+      }
+    } else {
+      // No stored data, could also set userData to null or an empty state
+      // depending on how you want to handle it, but `isLoading` false and `userData` null
+      // will hit the "No user data found" case.
+      setUserData(null);
     }
     setIsLoading(false)
   }, [router])

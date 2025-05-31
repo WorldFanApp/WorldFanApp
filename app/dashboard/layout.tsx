@@ -3,9 +3,10 @@
 import type React from "react"
 
 import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, usePathname } from "next/navigation" // Added usePathname
 import { useSession, signOut } from "next-auth/react"
 import Image from "next/image"
+import { Button } from "@/components/ui/button" // Added Button
 import {
   SidebarProvider,
   Sidebar,
@@ -19,7 +20,7 @@ import {
   SidebarGroupLabel,
   SidebarGroup,
 } from "@/components/ui/sidebar"
-import { Home, Music, Ticket, GamepadIcon, Settings, LogOut, User, Shield } from "lucide-react"
+import { Home, Music, Ticket, GamepadIcon, Settings, LogOut, User, Shield, ArrowLeft } from "lucide-react" // Added ArrowLeft
 import { Badge } from "@/components/ui/badge"
 
 export default function DashboardLayout({
@@ -29,6 +30,7 @@ export default function DashboardLayout({
 }) {
   const [isClient, setIsClient] = useState(false)
   const router = useRouter()
+  const pathname = usePathname(); // Get current pathname
   const { data: session, status } = useSession()
 
   useEffect(() => {
@@ -171,7 +173,17 @@ export default function DashboardLayout({
           <header className="border-b">
             <div className="flex h-16 items-center px-4 gap-4">
               <SidebarTrigger />
-              <h1 className="text-xl font-bold">Dashboard</h1>
+              {pathname !== "/dashboard" && (
+                <Button variant="outline" size="sm" onClick={() => router.push("/dashboard")}>
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  Back
+                </Button>
+              )}
+              <h1 className="text-xl font-semibold"> {/* Changed font-bold to font-semibold for better balance with button */}
+                {pathname === "/dashboard" ? "Dashboard" :
+                  (pathname.split('/').pop()?.charAt(0).toUpperCase() + pathname.split('/').pop()?.slice(1) || "Page")
+                }
+              </h1>
             </div>
           </header>
           <main className="p-6">{children}</main>

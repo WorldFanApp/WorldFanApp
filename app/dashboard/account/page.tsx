@@ -4,7 +4,7 @@ import type React from "react"
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { useSession } from "next-auth/react"
+import { useSession, signOut } from "next-auth/react" // Added signOut
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -62,6 +62,9 @@ export default function AccountPage() {
 
   const handleSave = () => {
     if (userData) {
+      // It's good practice to also update formData if userData is updated,
+      // though not strictly necessary if the component re-renders and reads from userData.
+      // For now, focusing on the task.
       const updatedData = {
         ...userData,
         username: formData.username,
@@ -77,7 +80,14 @@ export default function AccountPage() {
 
   const handleDeleteAccount = () => {
     localStorage.removeItem("userData")
-    router.push("/")
+    // Also sign out the NextAuth session
+    signOut({ callbackUrl: '/' });
+    // router.push("/") // signOut will handle redirect
+  }
+
+  const handleSignOut = () => {
+    localStorage.removeItem("userData"); // Clear app-specific data
+    signOut({ callbackUrl: '/' }); // Clear NextAuth session and redirect
   }
 
   if (isLoading) {
@@ -178,17 +188,19 @@ export default function AccountPage() {
                 <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                 <AlertDialogDescription>
                   This action cannot be undone. This will permanently delete your account and remove all your data from
-                  our servers.
+                  our servers (locally stored for this demo). Your World ID verification remains separate.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={handleDeleteAccount}>Delete</AlertDialogAction>
+                <AlertDialogAction onClick={handleDeleteAccount}>Delete Data & Sign Out</AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
-
-          <Button onClick={handleSave}>Save Changes</Button>
+          <div className="flex space-x-2">
+            <Button variant="outline" onClick={handleSignOut}>Sign Out</Button>
+            <Button onClick={handleSave}>Save Changes</Button>
+          </div>
         </CardFooter>
       </Card>
 
