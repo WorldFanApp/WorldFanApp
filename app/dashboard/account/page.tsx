@@ -24,6 +24,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import { MusicPreferencesForm } from "@/components/music-preferences-form"
 
 export default function AccountPage() {
   const router = useRouter()
@@ -36,6 +37,8 @@ export default function AccountPage() {
     createAccount: false,
     country: "",
     city: "",
+    artists: [] as string[],
+    genres: [] as string[],
   })
   const [isLoading, setIsLoading] = useState(true)
   const [availableCities, setAvailableCities] = useState<Array<{ id: string; name: string }>>([])
@@ -113,6 +116,8 @@ export default function AccountPage() {
         createAccount: parsedData.createAccount || false,
         country: parsedData.country || "",
         city: parsedData.city || "",
+        artists: parsedData.artists || [],
+        genres: parsedData.genres || [],
       })
     }
     setIsLoading(false)
@@ -139,6 +144,13 @@ export default function AccountPage() {
     setFormData((prev) => ({ ...prev, createAccount: checked }))
   }
 
+  const updateAccountData = (data: Partial<{ artists: string[]; genres: string[] }>) => {
+    setFormData(prev => ({
+      ...prev,
+      ...data
+    }));
+  };
+
   const handleSave = () => {
     if (userData) {
       const updatedData = {
@@ -149,6 +161,8 @@ export default function AccountPage() {
         createAccount: formData.createAccount,
         country: formData.country,
         city: formData.city,
+        artists: formData.artists,
+        genres: formData.genres,
       }
       localStorage.setItem("userData", JSON.stringify(updatedData))
       setUserData(updatedData)
@@ -369,6 +383,19 @@ export default function AccountPage() {
               </div>
             </div>
           )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Music Preferences</CardTitle>
+          <CardDescription>Update your favorite artists and genres.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <MusicPreferencesForm
+            userData={{ artists: formData.artists, genres: formData.genres }}
+            updateUserData={updateAccountData}
+          />
         </CardContent>
       </Card>
     </div>
