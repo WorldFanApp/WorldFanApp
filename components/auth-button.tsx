@@ -109,15 +109,57 @@ export function AuthButton({ callbackUrl = "/signup", className }: AuthButtonPro
     addDebugMessage("[AuthButton] Waiting 500ms before isInstalled check...");
     await new Promise(resolve => setTimeout(resolve, 500));
 
-    const isMiniKitInstalled = MiniKit.isInstalled();
-    addDebugMessage("[AuthButton] MiniKit.isInstalled() returned:", isMiniKitInstalled); // Ensure this logs the actual boolean
-
-    if (!isMiniKitInstalled) {
-      addDebugMessage("[AuthButton] Warn: MiniKit not detected as installed. Verification cannot proceed.");
-      // Potentially show a message to the user to install the Worldcoin App / enable MiniKit
-      return;
+    addDebugMessage("[AuthButton] Checking MiniKit.isReady - typeof:", typeof MiniKit.isReady);
+    let isMiniKitReady = false;
+    if (typeof MiniKit.isReady === 'function') {
+      try {
+        isMiniKitReady = MiniKit.isReady();
+        addDebugMessage("[AuthButton] MiniKit.isReady() (called as function) returned:", isMiniKitReady);
+      } catch (e: any) {
+        addDebugMessage("[AuthButton] Error calling MiniKit.isReady() as function:", e.message);
+      }
+    } else {
+      // Assuming it might be a property if not a function
+      isMiniKitReady = MiniKit.isReady;
+      addDebugMessage("[AuthButton] MiniKit.isReady (accessed as property) value:", isMiniKitReady);
     }
 
+    const isMiniKitInstalled = MiniKit.isInstalled();
+    addDebugMessage("[AuthButton] MiniKit.isInstalled() returned:", isMiniKitInstalled);
+
+    // Update the condition to potentially use isMiniKitReady
+    // For now, let's log both and if either is true, we can proceed (for testing)
+    // Or, more cautiously, let's see the logs first. The original logic uses !isMiniKitInstalled.
+    if (!isMiniKitInstalled && !isMiniKitReady) { // If both are definitively false
+      addDebugMessage("[AuthButton] Warn: MiniKit not detected as installed AND not ready. Verification cannot proceed.");
+      return;
+    } else if (!isMiniKitInstalled && isMiniKitReady) {
+      addDebugMessage("[AuthButton] Info: MiniKit.isInstalled() is false, but MiniKit.isReady() is true. Proceeding based on isReady.");
+      // Potentially proceed here
+    } else if (isMiniKitInstalled && !isMiniKitReady) {
+      addDebugMessage("[AuthButton] Info: MiniKit.isInstalled() is true, but MiniKit.isReady() is false. Proceed with caution or investigate readiness.");
+      // Potentially proceed here if isInstalled is deemed sufficient
+    } else { // Both true
+       addDebugMessage("[AuthButton] Info: MiniKit.isInstalled() is true AND MiniKit.isReady() is true. Proceeding.");
+    }
+
+    // The original conditional logic for proceeding was:
+    // if (!isMiniKitInstalled) {
+    //   addDebugMessage("[AuthButton] Warn: MiniKit not detected as installed. Verification cannot proceed.");
+    //   return;
+    // }
+    // For this test, we want to see the logs. If isMiniKitReady is true, the original !isMiniKitInstalled block should NOT be the sole gatekeeper.
+    // Let's adjust the main gatekeeping condition based on what we learn.
+    // For now, if isMiniKitReady is true, let's bypass the isInstalled check for proceeding.
+
+    if (!isMiniKitReady && !isMiniKitInstalled) { // If still neither, then definitely return
+        // This message is now duplicated by the more detailed block above, can be simplified later
+        return;
+    }
+
+    // If isMiniKitReady is true, we can assume for now it's okay to proceed
+    // even if isInstalled might be false.
+    // The rest of the function (calling MiniKit.commandsAsync.verify) follows...
     const verifyPayload: VerifyCommandInput = {
       action: "worldfansignup", // This should match the action ID in your Developer Portal
       verification_level: VerificationLevel.Orb, // Or VerificationLevel.Device for device auth
