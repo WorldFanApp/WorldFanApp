@@ -43,6 +43,7 @@ export function CustomWorldIDProvider(
       params: {
         scope: "openid profile email", // Default scopes, can be overridden by options.authorization.params
         response_type: "code",
+        redirect_uri: options.redirectUri, // Add this line
         ...options.authorization?.params, // Allow overriding scopes and other params
       },
     },

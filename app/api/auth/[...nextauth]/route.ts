@@ -1,7 +1,6 @@
 import NextAuth, { type NextAuthOptions } from "next-auth"; // Ensure NextAuthOptions is imported
 import { CustomWorldIDProvider } from "@/lib/custom-worldid-provider"; // Changed import
 
-/*
 export default NextAuth({
   providers: [
     CustomWorldIDProvider({ // Changed usage
@@ -30,9 +29,8 @@ export default NextAuth({
     },
   },
 });
-*/
 
-// Commenting out the second configuration for now to isolate the original one.
+/* // Commenting out the second configuration for now to isolate the original one.
 
 const authOptions: NextAuthOptions = {
   providers: [
@@ -106,3 +104,5 @@ const authOptions: NextAuthOptions = {
 const handler = NextAuth(authOptions)
 
 export { handler as GET, handler as POST }
+
+*/
