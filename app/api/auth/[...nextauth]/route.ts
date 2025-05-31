@@ -1,4 +1,36 @@
 import NextAuth, { type NextAuthOptions } from "next-auth"; // Ensure NextAuthOptions is imported
+import { CustomWorldIDProvider } from "@/lib/custom-worldid-provider"; // Changed import
+
+export default NextAuth({
+  providers: [
+    CustomWorldIDProvider({ // Changed usage
+      clientId: process.env.WORLD_ID_CLIENT_ID!, // Added non-null assertion
+      clientSecret: process.env.WORLD_ID_CLIENT_SECRET!, // Added non-null assertion
+      issuer: "https://id.worldcoin.org",
+      redirectUri: process.env.NEXTAUTH_URL + "/api/auth/callback/worldid",
+      authorization: {
+        params: {
+          scope: "openid profile",
+        },
+      },
+    }),
+  ],
+  callbacks: {
+    async jwt({ token, user }) {
+      if (user) {
+        token.id = user.id; // @ts-ignore TODO: check user type
+      }
+      return token;
+    },
+    async session({ session, token }) {
+      // @ts-ignore TODO: check session.user type
+      session.user.id = token.id;
+      return session;
+    },
+  },
+});
+
+/* // Commenting out the second configuration for now to isolate the original one.
 
 const authOptions: NextAuthOptions = {
   providers: [
@@ -72,3 +104,5 @@ const authOptions: NextAuthOptions = {
 const handler = NextAuth(authOptions)
 
 export { handler as GET, handler as POST }
+
+*/
