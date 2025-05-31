@@ -101,9 +101,16 @@ export function AuthButton({ callbackUrl = "/signup", className }: AuthButtonPro
 
   const initiateMiniAppVerify = async () => {
     addDebugMessage("[AuthButton] initiateMiniAppVerify called");
+    addDebugMessage("[AuthButton] MiniKit object:", MiniKit ? 'Defined' : 'Undefined');
+    if (MiniKit) {
+      addDebugMessage("[AuthButton] MiniKit keys:", Object.keys(MiniKit));
+    }
+
+    addDebugMessage("[AuthButton] Waiting 500ms before isInstalled check...");
+    await new Promise(resolve => setTimeout(resolve, 500));
 
     const isMiniKitInstalled = MiniKit.isInstalled();
-    addDebugMessage("[AuthButton] MiniKit.isInstalled():", isMiniKitInstalled);
+    addDebugMessage("[AuthButton] MiniKit.isInstalled() returned:", isMiniKitInstalled); // Ensure this logs the actual boolean
 
     if (!isMiniKitInstalled) {
       addDebugMessage("[AuthButton] Warn: MiniKit not detected as installed. Verification cannot proceed.");
