@@ -137,6 +137,7 @@ export default function FavoritesPage() {
               </Button>
             </CardHeader>
             <CardContent>
+              {/*
               {userData.genres && userData.genres.length > 0 ? (
                 <div className="flex flex-wrap gap-3">
                   {userData.genres.map((genre: string) => (
@@ -149,6 +150,7 @@ export default function FavoritesPage() {
               ) : (
                 <p>No favorite genres selected yet. <Button variant="link" onClick={handleEditGenres} className="p-0 h-auto">Add some?</Button></p>
               )}
+              */}
             </CardContent>
           </Card>
 
