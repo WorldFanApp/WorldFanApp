@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button"
 import { Switch } from "@/components/ui/switch"
 import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,6 +24,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import { MusicPreferencesForm } from "@/components/music-preferences-form"
 
 export default function AccountPage() {
   const router = useRouter()
@@ -33,8 +35,74 @@ export default function AccountPage() {
     email: "",
     phone: "",
     createAccount: false,
+    country: "",
+    city: "",
+    artists: [] as string[],
+    genres: [] as string[],
   })
   const [isLoading, setIsLoading] = useState(true)
+  const [availableCities, setAvailableCities] = useState<Array<{ id: string; name: string }>>([])
+
+  // Sample data - in a real app, this would come from an API
+  const countries = [
+    { id: "us", name: "United States" },
+    { id: "ca", name: "Canada" },
+    { id: "uk", name: "United Kingdom" },
+    { id: "au", name: "Australia" },
+    { id: "jp", name: "Japan" },
+    { id: "de", name: "Germany" },
+    { id: "fr", name: "France" },
+    { id: "br", name: "Brazil" },
+  ]
+
+  const citiesByCountry: Record<string, Array<{ id: string; name: string }>> = {
+    us: [
+      { id: "nyc", name: "New York" },
+      { id: "la", name: "Los Angeles" },
+      { id: "chi", name: "Chicago" },
+      { id: "hou", name: "Houston" },
+      { id: "mia", name: "Miami" },
+    ],
+    ca: [
+      { id: "tor", name: "Toronto" },
+      { id: "van", name: "Vancouver" },
+      { id: "mon", name: "Montreal" },
+      { id: "cal", name: "Calgary" },
+      { id: "ott", name: "Ottawa" },
+    ],
+    uk: [
+      { id: "lon", name: "London" },
+      { id: "man", name: "Manchester" },
+      { id: "bir", name: "Birmingham" },
+      { id: "gla", name: "Glasgow" },
+      { id: "liv", name: "Liverpool" },
+    ],
+    au: [
+      { id: "syd", name: "Sydney" },
+      { id: "mel", name: "Melbourne" },
+      { id: "bri", name: "Brisbane" },
+    ],
+    jp: [
+      { id: "tok", name: "Tokyo" },
+      { id: "osa", name: "Osaka" },
+      { id: "kyo", name: "Kyoto" },
+    ],
+    de: [
+      { id: "ber", name: "Berlin" },
+      { id: "mun", name: "Munich" },
+      { id: "ham", name: "Hamburg" },
+    ],
+    fr: [
+      { id: "par", name: "Paris" },
+      { id: "mar", name: "Marseille" },
+      { id: "lyo", name: "Lyon" },
+    ],
+    br: [
+      { id: "rio", name: "Rio de Janeiro" },
+      { id: "sao", name: "São Paulo" },
+      { id: "bra", name: "Brasília" },
+    ],
+  }
 
   useEffect(() => {
     const storedData = localStorage.getItem("userData")
@@ -46,10 +114,26 @@ export default function AccountPage() {
         email: parsedData.email || "",
         phone: parsedData.phone || "",
         createAccount: parsedData.createAccount || false,
+        country: parsedData.country || "",
+        city: parsedData.city || "",
+        artists: parsedData.artists || [],
+        genres: parsedData.genres || [],
       })
     }
     setIsLoading(false)
   }, [])
+
+  useEffect(() => {
+    if (formData.country) {
+      setAvailableCities(citiesByCountry[formData.country] || [])
+      // Optional: Reset city if country changes and current city is not in the new list
+      if (!citiesByCountry[formData.country]?.some(city => city.id === formData.city)) {
+        setFormData(prev => ({ ...prev, city: "" }))
+      }
+    } else {
+      setAvailableCities([])
+    }
+  }, [formData.country])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target
@@ -60,6 +144,13 @@ export default function AccountPage() {
     setFormData((prev) => ({ ...prev, createAccount: checked }))
   }
 
+  const updateAccountData = (data: Partial<{ artists: string[]; genres: string[] }>) => {
+    setFormData(prev => ({
+      ...prev,
+      ...data
+    }));
+  };
+
   const handleSave = () => {
     if (userData) {
       const updatedData = {
@@ -68,6 +159,10 @@ export default function AccountPage() {
         email: formData.email,
         phone: formData.phone,
         createAccount: formData.createAccount,
+        country: formData.country,
+        city: formData.city,
+        artists: formData.artists,
+        genres: formData.genres,
       }
       localStorage.setItem("userData", JSON.stringify(updatedData))
       setUserData(updatedData)
@@ -114,6 +209,46 @@ export default function AccountPage() {
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="country">Country</Label>
+              <Select
+                value={formData.country}
+                onValueChange={(value) => setFormData(prev => ({ ...prev, country: value, city: "" }))} // Reset city when country changes
+                disabled={!formData.createAccount}
+              >
+                <SelectTrigger id="country">
+                  <SelectValue placeholder="Select your country" />
+                </SelectTrigger>
+                <SelectContent>
+                  {countries.map((country) => (
+                    <SelectItem key={country.id} value={country.id}>
+                      {country.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="city">City</Label>
+              <Select
+                value={formData.city}
+                onValueChange={(value) => setFormData(prev => ({ ...prev, city: value }))}
+                disabled={!formData.createAccount || !formData.country}
+              >
+                <SelectTrigger id="city">
+                  <SelectValue placeholder={formData.country ? "Select your city" : "Select a country first"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableCities.map((city) => (
+                    <SelectItem key={city.id} value={city.id}>
+                      {city.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <Separator />
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
                 <Label htmlFor="createAccount">Account Status</Label>
@@ -248,6 +383,19 @@ export default function AccountPage() {
               </div>
             </div>
           )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Music Preferences</CardTitle>
+          <CardDescription>Update your favorite artists and genres.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <MusicPreferencesForm
+            userData={{ artists: formData.artists, genres: formData.genres }}
+            updateUserData={updateAccountData}
+          />
         </CardContent>
       </Card>
     </div>

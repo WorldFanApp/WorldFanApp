@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Ticket, Disc, Calendar } from "lucide-react"
-import { MiniKitPayment } from "@/components/minikit-payment"
+import MinikitPayment from "@/components/minikit-payment" // Changed import
 import { useState } from "react"
 
 export default function DropsPage() {
@@ -65,7 +65,7 @@ export default function DropsPage() {
                     <h3 className="font-medium">Feature Coming Soon</h3>
                     <p className="text-sm text-muted-foreground">We'll notify you when this feature is available</p>
                   </div>
-                  <MiniKitPayment
+                  <MinikitPayment
                     amount="10"
                     description="Concert Ticket Purchase"
                     reference="ticket-drop-001"

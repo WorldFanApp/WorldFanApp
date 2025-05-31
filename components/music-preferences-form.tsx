@@ -8,6 +8,12 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Check, ChevronsUpDown, X } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { searchArtists } from "@/lib/spotify"
+
+interface SpotifyArtistItem {
+  id: string;
+  name: string;
+}
 
 interface MusicPreferencesFormProps {
   userData: {
@@ -16,25 +22,6 @@ interface MusicPreferencesFormProps {
   }
   updateUserData: (data: Partial<{ artists: string[]; genres: string[] }>) => void
 }
-
-// Sample data - in a real app, this would come from Spotify API
-const allArtists = [
-  "Taylor Swift",
-  "The Weeknd",
-  "Drake",
-  "Billie Eilish",
-  "Bad Bunny",
-  "Dua Lipa",
-  "BTS",
-  "Ariana Grande",
-  "Post Malone",
-  "Justin Bieber",
-  "Beyoncé",
-  "Ed Sheeran",
-  "Kendrick Lamar",
-  "Harry Styles",
-  "Travis Scott",
-]
 
 const allGenres = [
   "Pop",
@@ -56,23 +43,56 @@ const allGenres = [
 
 export function MusicPreferencesForm({ userData, updateUserData }: MusicPreferencesFormProps) {
   const [artistSearch, setArtistSearch] = useState("")
+  const [apiArtists, setApiArtists] = useState<SpotifyArtistItem[]>([])
+  const [isLoadingArtists, setIsLoadingArtists] = useState(false)
+  const [debounceTimeout, setDebounceTimeout] = useState<NodeJS.Timeout | null>(null)
   const [genreSearch, setGenreSearch] = useState("")
   const [artistOpen, setArtistOpen] = useState(false)
   const [genreOpen, setGenreOpen] = useState(false)
 
-  const filteredArtists = allArtists.filter((artist) => artist.toLowerCase().includes(artistSearch.toLowerCase()))
-
   const filteredGenres = allGenres.filter((genre) => genre.toLowerCase().includes(genreSearch.toLowerCase()))
 
-  const addArtist = (artist: string) => {
-    if (!userData.artists.includes(artist)) {
-      updateUserData({ artists: [...userData.artists, artist] })
+  const handleArtistSearchChange = (searchValue: string) => {
+    setArtistSearch(searchValue)
+
+    if (debounceTimeout) {
+      clearTimeout(debounceTimeout)
     }
-    setArtistOpen(false)
+
+    if (!searchValue.trim()) {
+      setApiArtists([])
+      setIsLoadingArtists(false)
+      return
+    }
+
+    setIsLoadingArtists(true)
+    const newTimeout = setTimeout(async () => {
+      try {
+        const results = await searchArtists(searchValue, 5) // Fetch 5 results
+        setApiArtists(results)
+      } catch (error) {
+        console.error("Failed to search artists:", error)
+        setApiArtists([]) // Clear results on error
+      } finally {
+        setIsLoadingArtists(false)
+      }
+    }, 500) // 500ms debounce
+
+    setDebounceTimeout(newTimeout)
   }
 
-  const removeArtist = (artist: string) => {
-    updateUserData({ artists: userData.artists.filter((a) => a !== artist) })
+  const addArtist = (artistName: string) => {
+    if (!userData.artists.includes(artistName)) {
+      updateUserData({ artists: [...userData.artists, artistName] })
+    }
+    setArtistOpen(false)
+    // Optional: Clear search input and results after selection
+    // setArtistSearch("");
+    // setApiArtists([]);
+  }
+
+  const removeArtist = (artistName: string) => {
+    updateUserData({ artists: userData.artists.filter((a) => a !== artistName) })
   }
 
   const addGenre = (genre: string) => {
@@ -99,31 +119,43 @@ export function MusicPreferencesForm({ userData, updateUserData }: MusicPreferen
           </PopoverTrigger>
           <PopoverContent className="w-full p-0">
             <Command>
-              <CommandInput placeholder="Search artists..." value={artistSearch} onValueChange={setArtistSearch} />
+              <CommandInput
+                placeholder="Search artists..."
+                value={artistSearch}
+                onValueChange={handleArtistSearchChange}
+              />
               <CommandList>
-                <CommandEmpty>No artists found.</CommandEmpty>
-                <CommandGroup>
-                  {filteredArtists.map((artist) => (
-                    <CommandItem key={artist} value={artist} onSelect={() => addArtist(artist)}>
-                      <Check
-                        className={cn("mr-2 h-4 w-4", userData.artists.includes(artist) ? "opacity-100" : "opacity-0")}
-                      />
-                      {artist}
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
+                {isLoadingArtists && <CommandItem disabled>Loading...</CommandItem>}
+                {!isLoadingArtists && apiArtists.length === 0 && artistSearch.trim() !== "" && (
+                  <CommandEmpty>No artists found for "{artistSearch}".</CommandEmpty>
+                )}
+                {!isLoadingArtists && apiArtists.length === 0 && artistSearch.trim() === "" && (
+                  <CommandEmpty>Type to search for artists.</CommandEmpty>
+                )}
+                {!isLoadingArtists && apiArtists.map((artist) => (
+                  <CommandItem
+                    key={artist.id}
+                    value={artist.name}
+                    onSelect={() => addArtist(artist.name)}
+                  >
+                    <Check
+                      className={cn("mr-2 h-4 w-4", userData.artists.includes(artist.name) ? "opacity-100" : "opacity-0")}
+                    />
+                    {artist.name}
+                  </CommandItem>
+                ))}
               </CommandList>
             </Command>
           </PopoverContent>
         </Popover>
 
         <div className="flex flex-wrap gap-2 mt-3">
-          {userData.artists.map((artist) => (
-            <Badge key={artist} variant="secondary" className="px-3 py-1">
-              {artist}
-              <Button variant="ghost" size="sm" className="h-4 w-4 p-0 ml-2" onClick={() => removeArtist(artist)}>
+          {userData.artists.map((artistName) => (
+            <Badge key={artistName} variant="secondary" className="px-3 py-1">
+              {artistName}
+              <Button variant="ghost" size="sm" className="h-4 w-4 p-0 ml-2" onClick={() => removeArtist(artistName)}>
                 <X className="h-3 w-3" />
-                <span className="sr-only">Remove {artist}</span>
+                <span className="sr-only">Remove {artistName}</span>
               </Button>
             </Badge>
           ))}
