@@ -71,15 +71,12 @@ export function AuthButton({ callbackUrl = "/signup", className }: AuthButtonPro
         });
         addDebugMessage("[AuthButton] NextAuth signIn('credentials') result:", signInResult);
 
-        // Regardless of signInResult, show the proceed button.
-        // The success/failure is logged in debugMessages for the user to see.
-        setShowProceedButton(true);
-
-        // Log whether sign-in was successful or not for clarity in debug.
         if (signInResult && signInResult.ok && !signInResult.error) {
-          addDebugMessage("[AuthButton] NextAuth Credentials sign-in was successful (enable Proceed button).");
+          addDebugMessage("[AuthButton] NextAuth Credentials sign-in successful. Navigating to callbackUrl:", callbackUrl);
+          router.push(callbackUrl); // Use the callbackUrl prop defined in AuthButtonProps
         } else {
-          addDebugMessage("[AuthButton] Error: NextAuth Credentials sign-in failed (enable Proceed button). Result:", signInResult);
+          addDebugMessage("[AuthButton] Error: NextAuth Credentials sign-in failed. Will show Proceed button for debug. Result:", signInResult);
+          setShowProceedButton(true); // Only show if sign-in fails
         }
       };
 
@@ -119,7 +116,7 @@ export function AuthButton({ callbackUrl = "/signup", className }: AuthButtonPro
     const tempAppId = "app_7a9639a92f85fcf27213f982eddb5064";
     const actionId = "worldfansignup"; // Matches the action in verifyPayload later
 
-    addDebugMessage("[AuthButton] Attempting MiniKit.init with appId:", tempAppId, "and actionId:", actionId);
+    // addDebugMessage("[AuthButton] Attempting MiniKit.init with appId:", tempAppId, "and actionId:", actionId);
     try {
       if (MiniKit && typeof MiniKit.init === 'function') {
         await MiniKit.init({
@@ -127,66 +124,69 @@ export function AuthButton({ callbackUrl = "/signup", className }: AuthButtonPro
           action: actionId,
           // verification_level: VerificationLevel.Orb, // This seems to be for verify command, not init. Check docs if needed for init.
         });
-        addDebugMessage("[AuthButton] MiniKit.init called successfully.");
+        // addDebugMessage("[AuthButton] MiniKit.init called successfully.");
       } else {
-        addDebugMessage("[AuthButton] MiniKit.init is not a function or MiniKit is undefined.");
+        addDebugMessage("[AuthButton] MiniKit.init is not a function or MiniKit is undefined."); // Keep this error
       }
     } catch (e: any) {
-      addDebugMessage("[AuthButton] Error calling MiniKit.init:", e.message, e);
+      addDebugMessage("[AuthButton] Error calling MiniKit.init:", e.message, e); // Keep this error
     }
 
     // Existing diagnostic logs follow
-    addDebugMessage("[AuthButton] MiniKit object after init attempt:", MiniKit ? 'Defined' : 'Undefined');
-    if (MiniKit) {
-      const keys = Object.keys(MiniKit);
-      addDebugMessage("[AuthButton] MiniKit keys after init attempt:", keys);
-      keys.forEach(key => {
-        const value = (MiniKit as any)[key];
-        addDebugMessage(`[AuthButton] MiniKit.${key} (typeof: ${typeof value}):`, typeof value === 'function' ? 'Function' : value);
-      });
+    // addDebugMessage("[AuthButton] MiniKit object after init attempt:", MiniKit ? 'Defined' : 'Undefined');
+    // if (MiniKit) {
+    //   const keys = Object.keys(MiniKit);
+    //   addDebugMessage("[AuthButton] MiniKit keys after init attempt:", keys);
+    //   keys.forEach(key => {
+    //     const value = (MiniKit as any)[key];
+    //     addDebugMessage(`[AuthButton] MiniKit.${key} (typeof: ${typeof value}):`, typeof value === 'function' ? 'Function' : value);
+    //   });
 
-      if (MiniKit.appId) {
-        addDebugMessage("[AuthButton] MiniKit.appId value after init attempt:", MiniKit.appId);
-      } else {
-        addDebugMessage("[AuthButton] MiniKit.appId is NOT set or falsy after init attempt.");
-      }
-    }
+    //   if (MiniKit.appId) {
+    //     addDebugMessage("[AuthButton] MiniKit.appId value after init attempt:", MiniKit.appId);
+    //   } else {
+    //     addDebugMessage("[AuthButton] MiniKit.appId is NOT set or falsy after init attempt.");
+    //   }
+    // }
 
-    addDebugMessage("[AuthButton] Waiting 500ms before isInstalled/isReady check...");
-    await new Promise(resolve => setTimeout(resolve, 500));
+    // addDebugMessage("[AuthButton] Waiting 500ms before isInstalled/isReady check...");
+    await new Promise(resolve => setTimeout(resolve, 500)); // Keep delay for now, might be important for MiniKit init
 
-    addDebugMessage("[AuthButton] Checking MiniKit.isReady - typeof:", typeof MiniKit.isReady);
+    // addDebugMessage("[AuthButton] Checking MiniKit.isReady - typeof:", typeof MiniKit.isReady);
     let isMiniKitReady = false;
     if (typeof MiniKit.isReady === 'function') {
       try {
         isMiniKitReady = MiniKit.isReady();
-        addDebugMessage("[AuthButton] MiniKit.isReady() (called as function) returned:", isMiniKitReady);
+        // addDebugMessage("[AuthButton] MiniKit.isReady() (called as function) returned:", isMiniKitReady);
       } catch (e: any) {
-        addDebugMessage("[AuthButton] Error calling MiniKit.isReady() as function:", e.message);
+        addDebugMessage("[AuthButton] Error calling MiniKit.isReady() as function:", e.message); // Keep this error
       }
     } else {
       // Assuming it might be a property if not a function
-      isMiniKitReady = MiniKit.isReady;
-      addDebugMessage("[AuthButton] MiniKit.isReady (accessed as property) value:", isMiniKitReady);
+      // isMiniKitReady = MiniKit.isReady; // This was potentially problematic if MiniKit.isReady was undefined.
+      // addDebugMessage("[AuthButton] MiniKit.isReady (accessed as property) value:", isMiniKitReady);
+      // If MiniKit.isReady is not a function, and not a boolean property, this path is problematic.
+      // Let's log if it's neither a function nor a boolean.
+      if (typeof MiniKit.isReady !== 'boolean') {
+        addDebugMessage("[AuthButton] MiniKit.isReady is neither a function nor a boolean. Type:", typeof MiniKit.isReady);
+      } else {
+        isMiniKitReady = MiniKit.isReady; // It's a boolean property
+      }
     }
 
     const isMiniKitInstalled = MiniKit.isInstalled();
-    addDebugMessage("[AuthButton] MiniKit.isInstalled() returned:", isMiniKitInstalled);
+    // addDebugMessage("[AuthButton] MiniKit.isInstalled() returned:", isMiniKitInstalled);
 
     // Update the condition to potentially use isMiniKitReady
-    // For now, let's log both and if either is true, we can proceed (for testing)
-    // Or, more cautiously, let's see the logs first. The original logic uses !isMiniKitInstalled.
     if (!isMiniKitInstalled && !isMiniKitReady) { // If both are definitively false
       addDebugMessage("[AuthButton] Warn: MiniKit not detected as installed AND not ready. Verification cannot proceed.");
       return;
-    } else if (!isMiniKitInstalled && isMiniKitReady) {
-      addDebugMessage("[AuthButton] Info: MiniKit.isInstalled() is false, but MiniKit.isReady() is true. Proceeding based on isReady.");
-      // Potentially proceed here
-    } else if (isMiniKitInstalled && !isMiniKitReady) {
-      addDebugMessage("[AuthButton] Info: MiniKit.isInstalled() is true, but MiniKit.isReady() is false. Proceed with caution or investigate readiness.");
-      // Potentially proceed here if isInstalled is deemed sufficient
-    } else { // Both true
-       addDebugMessage("[AuthButton] Info: MiniKit.isInstalled() is true AND MiniKit.isReady() is true. Proceeding.");
+    // } else if (!isMiniKitInstalled && isMiniKitReady) {
+      // addDebugMessage("[AuthButton] Info: MiniKit.isInstalled() is false, but MiniKit.isReady() is true. Proceeding based on isReady.");
+    // } else if (isMiniKitInstalled && !isMiniKitReady) {
+      // addDebugMessage("[AuthButton] Info: MiniKit.isInstalled() is true, but MiniKit.isReady() is false. Proceed with caution or investigate readiness.");
+    // } else { // Both true
+      //  addDebugMessage("[AuthButton] Info: MiniKit.isInstalled() is true AND MiniKit.isReady() is true. Proceeding.");
     }
 
     // The original conditional logic for proceeding was:
@@ -211,18 +211,18 @@ export function AuthButton({ callbackUrl = "/signup", className }: AuthButtonPro
       verification_level: VerificationLevel.Orb, // Or VerificationLevel.Device for device auth
       // signal: "user_provided_signal_if_any" // Optional: if you use signals
     };
-    addDebugMessage("[AuthButton] Preparing verifyPayload:", verifyPayload);
+    // addDebugMessage("[AuthButton] Preparing verifyPayload:", verifyPayload);
 
     let result;
     try {
-      addDebugMessage("[AuthButton] Calling MiniKit.commandsAsync.verify...");
+      // addDebugMessage("[AuthButton] Calling MiniKit.commandsAsync.verify...");
       result = await MiniKit.commandsAsync.verify(verifyPayload);
-      addDebugMessage("[AuthButton] MiniKit.commandsAsync.verify returned (raw):", result);
+      // addDebugMessage("[AuthButton] MiniKit.commandsAsync.verify returned (raw):", result);
 
       if (result.finalPayload) {
-        addDebugMessage("[AuthButton] finalPayload received:", result.finalPayload);
+        // addDebugMessage("[AuthButton] finalPayload received:", result.finalPayload);
         if (result.finalPayload.status === 'success') {
-          addDebugMessage("[AuthButton] MiniApp verification success (finalPayload.status is 'success'), proceeding to handleVerification.");
+          // addDebugMessage("[AuthButton] MiniApp verification success (finalPayload.status is 'success'), proceeding to handleVerification.");
           if (result.finalPayload.proof && result.finalPayload.merkle_root && result.finalPayload.nullifier_hash) {
             handleVerification(result.finalPayload as ISuccessResult);
           } else {
