@@ -115,12 +115,43 @@ export function AuthButton({ callbackUrl = "/signup", className }: AuthButtonPro
 
   const initiateMiniAppVerify = async () => {
     addDebugMessage("[AuthButton] initiateMiniAppVerify called");
+
+    // Temporarily hardcode app_id for testing configuration
+    const tempAppId = "app_7a9639a92f85fcf27213f982eddb5064"; // As mentioned by user for WLD_APP_ID
+    addDebugMessage("[AuthButton] Attempting MiniKit.configure with appId:", tempAppId);
+    try {
+      // Assuming MiniKit.configure is synchronous or we don't need to await it
+      // based on typical SDK patterns for basic config.
+      // If it's async and returns a promise, it should be awaited.
+      // For now, let's assume it's synchronous.
+      if (MiniKit && typeof MiniKit.configure === 'function') {
+        MiniKit.configure({
+          app_id: tempAppId,
+          // Other options like `verification_level` might be configurable here too,
+          // but let's start with just app_id.
+          // Refer to minikit-js docs if other params are mandatory for configure.
+        });
+        addDebugMessage("[AuthButton] MiniKit.configure called successfully (assumed synchronous).");
+      } else {
+        addDebugMessage("[AuthButton] MiniKit.configure is not a function or MiniKit is undefined.");
+      }
+    } catch (e: any) {
+      addDebugMessage("[AuthButton] Error calling MiniKit.configure:", e.message);
+    }
+
+    // Existing diagnostic logs follow
     addDebugMessage("[AuthButton] MiniKit object:", MiniKit ? 'Defined' : 'Undefined');
     if (MiniKit) {
       addDebugMessage("[AuthButton] MiniKit keys:", Object.keys(MiniKit));
+      // Log appId from MiniKit itself after configuration
+      if (MiniKit.appId) {
+        addDebugMessage("[AuthButton] MiniKit.appId after configure:", MiniKit.appId);
+      } else {
+        addDebugMessage("[AuthButton] MiniKit.appId is still not set after configure.");
+      }
     }
 
-    addDebugMessage("[AuthButton] Waiting 500ms before isInstalled check...");
+    addDebugMessage("[AuthButton] Waiting 500ms before isInstalled/isReady check...");
     await new Promise(resolve => setTimeout(resolve, 500));
 
     addDebugMessage("[AuthButton] Checking MiniKit.isReady - typeof:", typeof MiniKit.isReady);
