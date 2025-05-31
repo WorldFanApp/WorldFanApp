@@ -33,36 +33,7 @@ const authOptions: NextAuthOptions = {
         return user;
       }
     }),
-    {
-      id: "worldcoin",
-      name: "World ID",
-      type: "oauth",
-      version: "2.0",
-      clientId: process.env.WORLDCOIN_CLIENT_ID!,
-      clientSecret: process.env.WORLDCOIN_CLIENT_SECRET!,
-      authorization: {
-        url: "https://id.worldcoin.org/authorize",
-        params: {
-          scope: "openid profile email",
-          response_type: "code",
-        },
-      },
-      token: {
-        url: "https://id.worldcoin.org/token",
-      },
-      userinfo: {
-        url: "https://id.worldcoin.org/userinfo",
-      },
-      profile(profile) {
-        return {
-          id: profile.sub,
-          name: profile.name || profile.preferred_username || "World ID User",
-          email: profile.email,
-          image: profile.picture,
-          worldcoin_credential_type: profile["https://id.worldcoin.org/v1/credential_type"] || profile.credential_type,
-        }
-      },
-    },
+    // Removed the old custom "worldcoin" OAuth provider
   ],
   secret: process.env.NEXTAUTH_SECRET!,
   session: {
