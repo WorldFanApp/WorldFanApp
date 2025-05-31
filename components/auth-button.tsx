@@ -99,6 +99,20 @@ export function AuthButton({ callbackUrl = "/signup", className }: AuthButtonPro
     }
   };
 
+  const handleCopyToClipboard = () => {
+    const logText = debugMessages.join('\n'); // Join messages with newlines
+    navigator.clipboard.writeText(logText)
+      .then(() => {
+        addDebugMessage("[AuthButton] Debug log copied to clipboard!");
+      })
+      .catch(err => {
+        addDebugMessage("[AuthButton] Error copying log to clipboard:", err);
+        // As a fallback, manually select and copy if permission denied or API not supported
+        // This part is more complex and might be omitted for a first pass if navigator.clipboard is expected to work
+        // For simplicity, we'll rely on navigator.clipboard.writeText for now.
+      });
+  };
+
   const initiateMiniAppVerify = async () => {
     addDebugMessage("[AuthButton] initiateMiniAppVerify called");
     addDebugMessage("[AuthButton] MiniKit object:", MiniKit ? 'Defined' : 'Undefined');
@@ -275,6 +289,14 @@ export function AuthButton({ callbackUrl = "/signup", className }: AuthButtonPro
               className="text-xs"
             >
               Clear Log
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleCopyToClipboard} // New handler function
+              className="text-xs ml-2" // Add margin if needed
+            >
+              Copy Log
             </Button>
           </div>
           <div className="max-h-48 overflow-y-auto text-xs text-gray-600 dark:text-gray-400 space-y-1 bg-white dark:bg-gray-900 p-2 rounded">
