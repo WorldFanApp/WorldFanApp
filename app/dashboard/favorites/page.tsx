@@ -106,7 +106,7 @@ export default function FavoritesPage() {
                             sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
                             className="object-cover transition-transform group-hover:scale-105"
                           />
-                           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"></div>
                         </div>
                         <div className="absolute bottom-0 left-0 right-0 p-4">
                           <h3 className="text-lg font-semibold text-white truncate">{artist.name}</h3>
