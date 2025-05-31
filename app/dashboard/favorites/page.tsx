@@ -90,6 +90,7 @@ export default function FavoritesPage() {
               </Button>
             </CardHeader>
             <CardContent>
+              {/*
               {userData.artists && userData.artists.length > 0 ? (
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                   {userData.artists.map((artist: SpotifyArtist) => {
@@ -118,6 +119,7 @@ export default function FavoritesPage() {
               ) : (
                 <p>No favorite artists selected yet. <Button variant="link" onClick={handleEditArtists} className="p-0 h-auto">Add some?</Button></p>
               )}
+              */}
             </CardContent>
           </Card>
         </TabsContent>
