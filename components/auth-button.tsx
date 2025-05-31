@@ -56,14 +56,34 @@ export function AuthButton({ callbackUrl = "/signup", className }: AuthButtonPro
       const data = await response.json();
       addDebugMessage("[AuthButton] /api/verify response:", data);
 
+      const performSignIn = async (reason: string) => {
+        if (!miniKitPayload.nullifier_hash) {
+          addDebugMessage("[AuthButton] Error: Nullifier hash is missing in miniKitPayload. Cannot sign in.", miniKitPayload);
+          return;
+        }
+        addDebugMessage(`[AuthButton] ${reason}. Attempting to sign in with NextAuth Credentials...`);
+        const signInResult = await signIn('credentials', {
+          redirect: false,
+          nullifier_hash: miniKitPayload.nullifier_hash,
+          // Potentially pass credential_type if needed by CredentialsProvider's authorize or for user object
+          // credential_type: miniKitPayload.credential_type // Assuming ISuccessResult might have it
+        });
+        addDebugMessage("[AuthButton] NextAuth signIn('credentials') result:", signInResult);
+
+        if (signInResult && signInResult.ok && !signInResult.error) {
+          addDebugMessage("[AuthButton] NextAuth Credentials sign-in successful. Redirecting to /signup...");
+          router.push("/signup");
+        } else {
+          addDebugMessage("[AuthButton] Error: NextAuth Credentials sign-in failed. Result:", signInResult);
+          // User remains on the page, error is in debug log.
+        }
+      };
+
       if (response.ok && data.success) {
-        addDebugMessage("[AuthButton] World ID verified successfully via MiniKit!");
-        router.push("/signup");
+        await performSignIn("World ID verified successfully via MiniKit!");
       } else if (response.ok && data.success === false && data.code === "max_verifications_reached") {
-        addDebugMessage(`[AuthButton] Backend verification indicated 'max_verifications_reached' (Code: ${data.code}). Treating as success for UI flow. Redirecting to /signup...`, data);
-        router.push("/signup");
-      }
-      else {
+        await performSignIn(`Backend verification indicated 'max_verifications_reached' (Code: ${data.code}). Treating as success for UI flow.`);
+      } else {
         addDebugMessage("[AuthButton] Error: MiniKit Backend Verification failed. Details:", data.error || data.detail || data.code || "Unknown error from /api/verify", data);
       }
     } catch (error) {
