@@ -116,38 +116,33 @@ export function AuthButton({ callbackUrl = "/signup", className }: AuthButtonPro
   const initiateMiniAppVerify = async () => {
     addDebugMessage("[AuthButton] initiateMiniAppVerify called");
 
-    // Temporarily hardcode app_id for testing configuration
-    const tempAppId = "app_7a9639a92f85fcf27213f982eddb5064"; // As mentioned by user for WLD_APP_ID
-    addDebugMessage("[AuthButton] Attempting MiniKit.configure with appId:", tempAppId);
+    const tempAppId = "app_7a9639a92f85fcf27213f982eddb5064";
+    const actionId = "worldfansignup"; // Matches the action in verifyPayload later
+
+    addDebugMessage("[AuthButton] Attempting MiniKit.init with appId:", tempAppId, "and actionId:", actionId);
     try {
-      // Assuming MiniKit.configure is synchronous or we don't need to await it
-      // based on typical SDK patterns for basic config.
-      // If it's async and returns a promise, it should be awaited.
-      // For now, let's assume it's synchronous.
-      if (MiniKit && typeof MiniKit.configure === 'function') {
-        MiniKit.configure({
+      if (MiniKit && typeof MiniKit.init === 'function') {
+        await MiniKit.init({
           app_id: tempAppId,
-          // Other options like `verification_level` might be configurable here too,
-          // but let's start with just app_id.
-          // Refer to minikit-js docs if other params are mandatory for configure.
+          action: actionId,
+          // verification_level: VerificationLevel.Orb, // This seems to be for verify command, not init. Check docs if needed for init.
         });
-        addDebugMessage("[AuthButton] MiniKit.configure called successfully (assumed synchronous).");
+        addDebugMessage("[AuthButton] MiniKit.init called successfully.");
       } else {
-        addDebugMessage("[AuthButton] MiniKit.configure is not a function or MiniKit is undefined.");
+        addDebugMessage("[AuthButton] MiniKit.init is not a function or MiniKit is undefined.");
       }
     } catch (e: any) {
-      addDebugMessage("[AuthButton] Error calling MiniKit.configure:", e.message);
+      addDebugMessage("[AuthButton] Error calling MiniKit.init:", e.message, e);
     }
 
     // Existing diagnostic logs follow
-    addDebugMessage("[AuthButton] MiniKit object:", MiniKit ? 'Defined' : 'Undefined');
+    addDebugMessage("[AuthButton] MiniKit object after init attempt:", MiniKit ? 'Defined' : 'Undefined');
     if (MiniKit) {
-      addDebugMessage("[AuthButton] MiniKit keys:", Object.keys(MiniKit));
-      // Log appId from MiniKit itself after configuration
-      if (MiniKit.appId) {
-        addDebugMessage("[AuthButton] MiniKit.appId after configure:", MiniKit.appId);
+      addDebugMessage("[AuthButton] MiniKit keys after init attempt:", Object.keys(MiniKit));
+      if (MiniKit.appId) { // Check if appId property is set by init
+        addDebugMessage("[AuthButton] MiniKit.appId after init attempt:", MiniKit.appId);
       } else {
-        addDebugMessage("[AuthButton] MiniKit.appId is still not set after configure.");
+        addDebugMessage("[AuthButton] MiniKit.appId is NOT set after init attempt.");
       }
     }
 
