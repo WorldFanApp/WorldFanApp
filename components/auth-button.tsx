@@ -18,6 +18,7 @@ export function AuthButton({ callbackUrl = "/signup", className }: AuthButtonPro
   const { data: session, status } = useSession()
   const router = useRouter();
   const [debugMessages, setDebugMessages] = useState<string[]>([]);
+  const [showProceedButton, setShowProceedButton] = useState<boolean>(false);
 
   const addDebugMessage = (message: string, data?: any) => {
     const fullMessage = data ? `${message} ${JSON.stringify(data, null, 2)}` : message;
@@ -70,12 +71,15 @@ export function AuthButton({ callbackUrl = "/signup", className }: AuthButtonPro
         });
         addDebugMessage("[AuthButton] NextAuth signIn('credentials') result:", signInResult);
 
+        // Regardless of signInResult, show the proceed button.
+        // The success/failure is logged in debugMessages for the user to see.
+        setShowProceedButton(true);
+
+        // Log whether sign-in was successful or not for clarity in debug.
         if (signInResult && signInResult.ok && !signInResult.error) {
-          addDebugMessage("[AuthButton] NextAuth Credentials sign-in successful. Redirecting to /signup...");
-          router.push("/signup");
+          addDebugMessage("[AuthButton] NextAuth Credentials sign-in was successful (enable Proceed button).");
         } else {
-          addDebugMessage("[AuthButton] Error: NextAuth Credentials sign-in failed. Result:", signInResult);
-          // User remains on the page, error is in debug log.
+          addDebugMessage("[AuthButton] Error: NextAuth Credentials sign-in failed (enable Proceed button). Result:", signInResult);
         }
       };
 
@@ -212,9 +216,16 @@ export function AuthButton({ callbackUrl = "/signup", className }: AuthButtonPro
   // When no session, show the sign-in button and debug logs
   return (
     <div className="flex flex-col items-center space-y-4">
-      <Button onClick={initiateMiniAppVerify} className={className} size="lg">
-        Sign In with World ID
-      </Button>
+      {!showProceedButton && (
+        <Button onClick={initiateMiniAppVerify} className={className} size="lg">
+          Sign In with World ID
+        </Button>
+      )}
+      {showProceedButton && (
+        <Button onClick={() => router.push("/signup")} className={className} size="lg" variant="default">
+          Proceed to Signup
+        </Button>
+      )}
       {debugMessages.length > 0 && (
         <div className="w-full max-w-md p-4 mt-4 border border-gray-300 rounded-md bg-gray-50 dark:bg-gray-800 dark:border-gray-700">
           <div className="flex justify-between items-center mb-2">
