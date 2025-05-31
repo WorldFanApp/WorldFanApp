@@ -59,8 +59,12 @@ export function AuthButton({ callbackUrl = "/signup", className }: AuthButtonPro
       if (response.ok && data.success) {
         addDebugMessage("[AuthButton] World ID verified successfully via MiniKit!");
         router.push("/signup");
-      } else {
-        addDebugMessage("[AuthButton] Error: MiniKit Backend Verification failed:", data.error || "Unknown error from /api/verify");
+      } else if (response.ok && data.success === false && data.code === "max_verifications_reached") {
+        addDebugMessage(`[AuthButton] Backend verification indicated 'max_verifications_reached' (Code: ${data.code}). Treating as success for UI flow. Redirecting to /signup...`, data);
+        router.push("/signup");
+      }
+      else {
+        addDebugMessage("[AuthButton] Error: MiniKit Backend Verification failed. Details:", data.error || data.detail || data.code || "Unknown error from /api/verify", data);
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
