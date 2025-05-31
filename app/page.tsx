@@ -13,17 +13,21 @@ export default function Home() {
   const router = useRouter()
 
   useEffect(() => {
-    // If user is authenticated, redirect to signup or dashboard
-    // if (status === "authenticated") {
-    //   // Check if user has completed signup
-    //   const userData = localStorage.getItem("userData")
-    //   if (userData) {
-    //     router.push("/dashboard")
-    //   } else {
-    //     router.push("/signup")
-    //   }
-    // }
-  }, [status, router])
+    console.log("[app/page.tsx useEffect] Status:", status);
+    if (status === "authenticated") {
+      console.log("[app/page.tsx useEffect] Authenticated. Checking localStorage for userData...");
+      const userData = localStorage.getItem("userData");
+      if (userData) {
+        console.log("[app/page.tsx useEffect] userData found in localStorage. Redirecting to /dashboard.");
+        router.push("/dashboard");
+      } else {
+        console.log("[app/page.tsx useEffect] userData NOT found in localStorage. Redirecting to /signup.");
+        router.push("/signup");
+      }
+    } else {
+      console.log("[app/page.tsx useEffect] Not authenticated. No redirect.");
+    }
+  }, [status, router]);
 
   return (
     <div className="flex min-h-screen flex-col">
