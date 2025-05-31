@@ -138,11 +138,17 @@ export function AuthButton({ callbackUrl = "/signup", className }: AuthButtonPro
     // Existing diagnostic logs follow
     addDebugMessage("[AuthButton] MiniKit object after init attempt:", MiniKit ? 'Defined' : 'Undefined');
     if (MiniKit) {
-      addDebugMessage("[AuthButton] MiniKit keys after init attempt:", Object.keys(MiniKit));
-      if (MiniKit.appId) { // Check if appId property is set by init
-        addDebugMessage("[AuthButton] MiniKit.appId after init attempt:", MiniKit.appId);
+      const keys = Object.keys(MiniKit);
+      addDebugMessage("[AuthButton] MiniKit keys after init attempt:", keys);
+      keys.forEach(key => {
+        const value = (MiniKit as any)[key];
+        addDebugMessage(`[AuthButton] MiniKit.${key} (typeof: ${typeof value}):`, typeof value === 'function' ? 'Function' : value);
+      });
+
+      if (MiniKit.appId) {
+        addDebugMessage("[AuthButton] MiniKit.appId value after init attempt:", MiniKit.appId);
       } else {
-        addDebugMessage("[AuthButton] MiniKit.appId is NOT set after init attempt.");
+        addDebugMessage("[AuthButton] MiniKit.appId is NOT set or falsy after init attempt.");
       }
     }
 

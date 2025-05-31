@@ -3,7 +3,7 @@ import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
-import { SessionProvider } from "@/components/session-provider"
+import ClientProviders from "./client-providers"; // Import the new providers component
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -26,7 +26,9 @@ export default function RootLayout({
       </head>
       <body className={inter.className}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-          <SessionProvider>{children}</SessionProvider>
+          <ClientProviders> {/* Use the new ClientProviders */}
+            {children}
+          </ClientProviders>
         </ThemeProvider>
       </body>
     </html>
