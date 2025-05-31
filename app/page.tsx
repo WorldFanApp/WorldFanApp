@@ -14,15 +14,15 @@ export default function Home() {
 
   useEffect(() => {
     // If user is authenticated, redirect to signup or dashboard
-    if (status === "authenticated") {
-      // Check if user has completed signup
-      const userData = localStorage.getItem("userData")
-      if (userData) {
-        router.push("/dashboard")
-      } else {
-        router.push("/signup")
-      }
-    }
+    // if (status === "authenticated") {
+    //   // Check if user has completed signup
+    //   const userData = localStorage.getItem("userData")
+    //   if (userData) {
+    //     router.push("/dashboard")
+    //   } else {
+    //     router.push("/signup")
+    //   }
+    // }
   }, [status, router])
 
   return (
